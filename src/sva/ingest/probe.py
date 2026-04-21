@@ -40,7 +40,7 @@ def probe_metadata(path: Path | str) -> VideoMetadata:
 
     try:
         container = av.open(str(p))
-    except av.AVError as exc:  # pragma: no cover - defensive
+    except av.FFmpegError as exc:  # pragma: no cover - defensive
         raise ValueError(f"Unable to open {p}: {exc}") from exc
 
     try:
