@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sva"
+version = "0.1.0"
+description = "Sports Video Analytics — Ultimate Frisbee VLM+LLM event extraction pipeline"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic>=2.9",
+  "pydantic-settings>=2.5",
+  "pydantic-ai>=0.0.40",
+  "google-genai>=0.3",
+  "anthropic>=0.40",
+  "av>=13.0",
+  "sqlalchemy>=2.0",
+  "alembic>=1.13",
+  "psycopg[binary]>=3.2",
+  "langfuse>=2.50",
+  "python-dotenv>=1.0",
+  "typer>=0.12",
+  "tenacity>=9.0",
+  "rich>=13.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.7",
+  "mypy>=1.11",
+]
+
+[project.scripts]
+sva = "sva.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sva"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
