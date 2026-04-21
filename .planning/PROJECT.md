@@ -22,7 +22,7 @@ An automated pipeline that converts raw Ultimate Frisbee game footage into struc
 
 **Pipeline**
 - [ ] Accept a video file or public video URL (UFA YouTube, tournament streams, etc.) as input
-- [ ] Sample frames at a configurable rate (working assumption: ~3 fps) and feed windowed clips to a VLM
+- [ ] Sample frames at a configurable rate (default 1 fps — aligned with Gemini 2.5 Flash native video sampling; 3 fps is the v1 ceiling for cost discipline) and feed windowed clips to a VLM
 - [ ] VLM emits structured candidate observations (what's visible, who has the disc, state of play)
 - [ ] LLM interprets candidate observations into canonical game events using rules + few-shot examples from external memory
 - [ ] External memory stores rules, positive/negative examples, and corrections — decoupled from model choice so VLM/LLM can be swapped
@@ -90,7 +90,7 @@ An automated pipeline that converts raw Ultimate Frisbee game footage into struc
 ## Constraints
 
 - **Tech stack**: Hybrid hosting posture — start with managed VLM APIs (Gemini / GPT-4o / Claude) for speed; add self-hosted OSS option (Qwen-VL, Llama-Vision on Modal/RunPod or equivalent) if/when cost or control demands it.
-- **Cost**: VLM inference at ~3fps over an hour of footage is non-trivial. Cost-per-game visibility is required from day 1; aggressive sampling / clip windowing / caching / batching must be design-level concerns.
+- **Cost**: VLM inference over an hour of footage is non-trivial even at 1fps. Default sampling rate is 1fps (Gemini 2.5 Flash native video); 3fps is the v1 ceiling, not the target. Cost-per-game visibility is required from day 1; aggressive sampling / clip windowing / caching / batching must be design-level concerns.
 - **Accuracy floor**: ~85% recall on core MVP events (possession, goals, completions, turnovers) is the alpha-gate. Below that, we do not show coaches.
 - **Data**: No own footage archive; dev and eval use public sources. A small human-labeled gold set is a prerequisite for measuring accuracy.
 - **Team size**: Solo + AI-assisted. Architectural complexity must be tractable for one person to maintain.
@@ -110,6 +110,8 @@ An automated pipeline that converts raw Ultimate Frisbee game footage into struc
 | Integrate-friendly CSV/Excel output (not just JSON) | Coach workflows run on spreadsheets; existing Ultimate tools consume CSV. JSON is engineering-facing, not user-facing. | — Pending |
 | Ultimate Frisbee first, generalize later | Ultimate's inconsistent quality is the hard case — solving it yields a more robust system than starting with broadcast-quality sports. | — Pending |
 | Frontier VLM APIs before custom training | Per the core thesis, improvements in underlying models should translate into better outputs without re-architecting. No custom model training in v1. | — Pending |
+| WFDF rulebook as rule source | User preference over USAU. WFDF is the international standard; events are interpreted against WFDF rules at interpretation time. Rules are data (not code) so updates are a file change. | — Pending |
+| Sampling rate: default 1 fps, ceiling 3 fps | Gemini 2.5 Flash native video sampling is 1 fps — matching the default keeps per-game cost in the ~$0.40 range. 3 fps is the v1 ceiling for cost discipline; exceeding it requires an explicit decision. | — Pending |
 
 ## Evolution
 
@@ -129,4 +131,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-20 after initialization*
+*Last updated: 2026-04-21 after WFDF rulebook + 1fps default amendments*

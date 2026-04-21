@@ -23,7 +23,7 @@ Scope definition: **v1 = what must be true to open alpha to 2–5 friendly coach
 
 ### Perceive (VLM layer)
 
-- [ ] **PERCEIVE-01**: System samples frames from ingested video at a configurable rate (default aligned with Gemini 2.5 Flash native 1fps)
+- [ ] **PERCEIVE-01**: System samples frames from ingested video at a configurable rate — default 1 fps (aligned with Gemini 2.5 Flash native video sampling); 3 fps is the v1 ceiling and exceeding it requires an explicit cost-aware decision
 - [ ] **PERCEIVE-02**: VLM adapter emits structured `Observation` records conforming to a versioned schema that is independent of the specific VLM backend
 - [ ] **PERCEIVE-03**: Observation outputs are cached keyed on `(video_id, window_id, prompt_version_hash)`; prompt iteration does not re-pay VLM cost for unchanged windows
 - [ ] **PERCEIVE-04**: VLM adapter handles rate limits with backoff and records per-call cost + latency
@@ -31,7 +31,7 @@ Scope definition: **v1 = what must be true to open alpha to 2–5 friendly coach
 ### Interpret (LLM layer)
 
 - [ ] **INTERPRET-01**: LLM adapter consumes Observations plus retrieved memory and emits canonical `Event` records conforming to a versioned schema
-- [ ] **INTERPRET-02**: USAU 2024–25 rule set is composed into the LLM prompt at interpretation time and is the single source of rule truth
+- [ ] **INTERPRET-02**: WFDF rule set is composed into the LLM prompt at interpretation time and is the single source of rule truth; rules live as data (not code) so updates are a file change
 - [ ] **INTERPRET-03**: LLM structured output is validated against the event schema; schema violations are logged and flagged, never silently dropped
 
 ### Memory (external memory / correction loop)
@@ -150,57 +150,66 @@ Which phases cover which requirements. Updated by the roadmapper during roadmap 
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INGEST-01 | TBD | Pending |
-| INGEST-02 | TBD | Pending |
-| INGEST-03 | TBD | Pending |
-| INGEST-04 | TBD | Pending |
-| INGEST-05 | TBD | Pending |
-| POINT-01 | TBD | Pending |
-| POINT-02 | TBD | Pending |
-| POINT-03 | TBD | Pending |
-| PERCEIVE-01 | TBD | Pending |
-| PERCEIVE-02 | TBD | Pending |
-| PERCEIVE-03 | TBD | Pending |
-| PERCEIVE-04 | TBD | Pending |
-| INTERPRET-01 | TBD | Pending |
-| INTERPRET-02 | TBD | Pending |
-| INTERPRET-03 | TBD | Pending |
-| MEMORY-01 | TBD | Pending |
-| MEMORY-02 | TBD | Pending |
-| MEMORY-03 | TBD | Pending |
-| MEMORY-04 | TBD | Pending |
-| MEMORY-05 | TBD | Pending |
-| EVENT-01 | TBD | Pending |
-| EVENT-02 | TBD | Pending |
-| EVENT-03 | TBD | Pending |
-| EVENT-04 | TBD | Pending |
-| EVENT-05 | TBD | Pending |
-| EVENT-06 | TBD | Pending |
-| EVENT-07 | TBD | Pending |
-| EVENT-08 | TBD | Pending |
-| API-01 | TBD | Pending |
-| API-02 | TBD | Pending |
-| API-03 | TBD | Pending |
-| API-04 | TBD | Pending |
-| API-05 | TBD | Pending |
-| UI-01 | TBD | Pending |
-| UI-02 | TBD | Pending |
-| UI-03 | TBD | Pending |
-| UI-04 | TBD | Pending |
-| UI-05 | TBD | Pending |
-| EXPORT-01 | TBD | Pending |
-| EVAL-01 | TBD | Pending |
-| EVAL-02 | TBD | Pending |
-| EVAL-03 | TBD | Pending |
-| EVAL-04 | TBD | Pending |
-| OBS-01 | TBD | Pending |
-| OBS-02 | TBD | Pending |
+| INGEST-01 | Phase 2 | Pending |
+| INGEST-02 | Phase 2 | Pending |
+| INGEST-03 | Phase 1 | Pending |
+| INGEST-04 | Phase 1 | Pending |
+| INGEST-05 | Phase 1 | Pending |
+| POINT-01 | Phase 2 | Pending |
+| POINT-02 | Phase 7 | Pending |
+| POINT-03 | Phase 2 | Pending |
+| PERCEIVE-01 | Phase 3 | Pending |
+| PERCEIVE-02 | Phase 3 | Pending |
+| PERCEIVE-03 | Phase 3 | Pending |
+| PERCEIVE-04 | Phase 3 | Pending |
+| INTERPRET-01 | Phase 4 | Pending |
+| INTERPRET-02 | Phase 4 | Pending |
+| INTERPRET-03 | Phase 4 | Pending |
+| MEMORY-01 | Phase 5 | Pending |
+| MEMORY-02 | Phase 5 | Pending |
+| MEMORY-03 | Phase 5 | Pending |
+| MEMORY-04 | Phase 5 | Pending |
+| MEMORY-05 | Phase 5 | Pending |
+| EVENT-01 | Phase 4 | Pending |
+| EVENT-02 | Phase 4 | Pending |
+| EVENT-03 | Phase 4 | Pending |
+| EVENT-04 | Phase 4 | Pending |
+| EVENT-05 | Phase 4 | Pending |
+| EVENT-06 | Phase 4 | Pending |
+| EVENT-07 | Phase 4 | Pending |
+| EVENT-08 | Phase 4 | Pending |
+| API-01 | Phase 6 | Pending |
+| API-02 | Phase 6 | Pending |
+| API-03 | Phase 6 | Pending |
+| API-04 | Phase 6 | Pending |
+| API-05 | Phase 6 | Pending |
+| UI-01 | Phase 7 | Pending |
+| UI-02 | Phase 7 | Pending |
+| UI-03 | Phase 7 | Pending |
+| UI-04 | Phase 7 | Pending |
+| UI-05 | Phase 7 | Pending |
+| EXPORT-01 | Phase 6 | Pending |
+| EVAL-01 | Phase 7 | Pending |
+| EVAL-02 | Phase 7 | Pending |
+| EVAL-03 | Phase 7 | Pending |
+| EVAL-04 | Phase 7 | Pending |
+| OBS-01 | Phase 1 | Pending |
+| OBS-02 | Phase 1 | Pending |
 
 **Coverage:**
 - v1 requirements: 45 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 45 ⚠️ (will be resolved by roadmapper)
+- Mapped to phases: 45
+- Unmapped: 0
+
+**Per-phase counts:**
+- Phase 1 (Foundation & Narrow Vertical Slice): 5 requirements
+- Phase 2 (Ingest & Point Detection): 4 requirements
+- Phase 3 (Perception Layer): 4 requirements
+- Phase 4 (Interpretation & Event Taxonomy): 11 requirements
+- Phase 5 (Memory & Correction Loop): 5 requirements
+- Phase 6 (Async Orchestration & API): 6 requirements
+- Phase 7 (Evaluation Harness & Alpha UI): 10 requirements
 
 ---
 *Requirements defined: 2026-04-21*
-*Last updated: 2026-04-21 after initial definition*
+*Last updated: 2026-04-20 after roadmap creation (traceability mapped)*
