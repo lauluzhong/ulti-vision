@@ -2,7 +2,7 @@
 phase: 01-foundation-narrow-vertical-slice
 plan: 05
 subsystem: cli-pipeline
-tags: [typer, rich, cli, pipeline, e2e, ingest-04, obs-01, obs-02, phase1-gate, checkpoint-pending]
+tags: [typer, rich, cli, pipeline, e2e, ingest-04, obs-01, obs-02, phase1-gate]
 
 # Dependency graph
 requires:
@@ -50,12 +50,12 @@ patterns-established:
   - "CLI 'ingest' accepts --dry-run to exercise the CLI argument path without running the pipeline; useful for Phase 1 smoke tests where a live DB is not available"
   - "make_default_perceiver() and make_default_interpreter() are the single-line swap points -- run_pipeline reads them and passes through; any VLM/LLM backend change is a one-function edit in sva.perceive.runner / sva.interpret.runner"
 
-requirements-completed: []   # All INGEST-03/04/05 + OBS-01/02 are gated by the Task 3 human-verify checkpoint; none can be marked complete until Langfuse traces are verified by a human
+requirements-completed: [INGEST-03, INGEST-04, INGEST-05, OBS-01, OBS-02]   # User verified Langfuse traces in Cloud dashboard on 2026-04-22; all 5 checklist items approved
 
 # Metrics
 duration: ~5 min
 completed: 2026-04-22
-status: checkpoint-pending (Task 3 human-verify blocks phase completion)
+status: complete (Task 3 human-verify closed 2026-04-22: user approved all 5 Langfuse checklist items)
 ---
 
 # Phase 01 Plan 05: CLI Assembly + Phase 1 Acceptance Gate Summary
@@ -144,11 +144,13 @@ dry_run=True
 
 Full-pipeline `sva ingest` (no `--dry-run`) reaches `ingest_clip` → probe+transcode succeed → DB insert raises `psycopg.OperationalError: connection refused` at port 5432. This proves the CLI → pipeline wiring is correct; only the DB is unavailable in this worktree.
 
-## Task 3 — Checkpoint Disposition (NOT COMPLETE)
+## Task 3 — Checkpoint Disposition (CLOSED 2026-04-22)
 
-Task 3 is `type="checkpoint:human-verify"`. Per the plan directive `autonomous: false` and the orchestrator's instruction to "return control to the orchestrator with a structured state report per checkpoints.md rather than blocking", this task remains **open**.
+Task 3 was `type="checkpoint:human-verify"`. Per the plan directive `autonomous: false`, the executor returned a structured state report to the orchestrator. The user (project owner) ran the E2E against live Postgres + real Langfuse Cloud keys on 2026-04-22 and replied **`approved`** — confirming all 5 dashboard checklist items. Phase 1 gate is now closed.
 
-**What must happen for Task 3 to close:**
+**Closure evidence:** User message "approved" in the orchestrator conversation on 2026-04-22 after inspecting the Langfuse dashboard. No code changes were required to close this task — the code paths were already verified structurally; the gate exclusively validated live Langfuse trace delivery.
+
+**Original close criteria (for reference):**
 
 1. A developer environment with Docker + real Langfuse Cloud keys provisioned in `.env`
 2. Bring up Postgres: `docker compose up -d db && uv run alembic upgrade head`
@@ -247,11 +249,12 @@ To close Task 3 and advance Phase 1:
 
 ---
 
-## CHECKPOINT REACHED
+## CHECKPOINT CLOSED — 2026-04-22
 
 **Type:** human-verify
 **Plan:** 01-05
-**Progress:** 2/3 tasks complete (Tasks 1-2 GREEN; Task 3 awaiting human verification)
+**Resolution:** user replied `approved` in the orchestrator conversation after inspecting the Langfuse Cloud dashboard against all 5 checklist items. All 3 tasks now complete.
+**Progress:** 3/3 tasks complete
 
 ### Completed Tasks
 
@@ -320,4 +323,4 @@ Structural checks from plan:
 *Phase: 01-foundation-narrow-vertical-slice*
 *Plan: 05*
 *Completed Tasks 1-2: 2026-04-22*
-*Task 3 (checkpoint): awaiting human verification*
+*Task 3 (checkpoint): closed 2026-04-22 — user `approved` after verifying Langfuse dashboard*
