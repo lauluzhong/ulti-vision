@@ -18,7 +18,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ## Phases
 
-- [ ] **Phase 1: Foundation & Narrow Vertical Slice** - Swap-safe schemas, CFR transcode, observability, and a single-clip end-to-end CLI proof that every boundary works
+- [x] **Phase 1: Foundation & Narrow Vertical Slice** - Swap-safe schemas, CFR transcode, observability, and a single-clip end-to-end CLI proof that every boundary works *(complete 2026-04-22)*
 - [ ] **Phase 2: Ingest & Point Detection** - Full file/URL ingest and point-boundary detection pass that gates every downstream per-point computation
 - [ ] **Phase 3: Perception Layer** - VLM adapter with structured Observation output and per-window caching so prompt iteration is cheap
 - [ ] **Phase 4: Interpretation & Event Taxonomy** - LLM adapter with USAU-rule composition that emits the full v1 event set with schema-validated output
@@ -118,7 +118,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Narrow Vertical Slice | 0/TBD | Not started | - |
+| 1. Foundation & Narrow Vertical Slice | 5/5 | Complete ✓ | 2026-04-22 |
 | 2. Ingest & Point Detection | 0/TBD | Not started | - |
 | 3. Perception Layer | 0/TBD | Not started | - |
 | 4. Interpretation & Event Taxonomy | 0/TBD | Not started | - |
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-20 after initial creation*
+*Last updated: 2026-04-22 — Phase 1 marked complete after verification (5/5 REQ-IDs achieved, 4/4 success-criteria truths satisfied)*
