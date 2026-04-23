@@ -6,6 +6,7 @@ Failures are logged but never raise, so observability outages do not break the p
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -36,6 +37,9 @@ class TraceContext:
     point_id: str | None = None
     point_ordinal: int | None = None
     prompt_version_hash: str | None = None  # OBS-02: short SHA-256 hex of the prompt string (12 chars)
+    latency_ms: int | None = None
+    retry_count: int | None = None
+    terminal_status: str | None = None
     # Compute as: hashlib.sha256(prompt.encode()).hexdigest()[:12]
     # Example: hashlib.sha256("Analyze this frame".encode()).hexdigest()[:12] == "3b5a2c1d4e6f"
 
@@ -71,6 +75,24 @@ def observe_call(
     """
 
     def decorator(fn: Callable[..., T]) -> Callable[..., T]:
+        def _update_trace(trace: Any, cost_usd: Decimal, in_tokens: int, out_tokens: int, updated_ctx: TraceContext) -> None:
+            trace.update(
+                output={
+                    "cost_usd": str(cost_usd),
+                    "input_tokens": in_tokens,
+                    "output_tokens": out_tokens,
+                    "latency_ms": updated_ctx.latency_ms,
+                    "retry_count": updated_ctx.retry_count,
+                    "terminal_status": updated_ctx.terminal_status,
+                    "prompt_version_hash": updated_ctx.prompt_version_hash,
+                },
+            )
+            trace.score(name="cost_usd", value=float(cost_usd))
+            trace.score(name="input_tokens", value=float(in_tokens))
+            trace.score(name="output_tokens", value=float(out_tokens))
+            if updated_ctx.latency_ms is not None:
+                trace.score(name="latency_ms", value=float(updated_ctx.latency_ms))
+
         @wraps(fn)
         def wrapper(ctx: TraceContext, *args: Any, **kwargs: Any) -> T:
             lf = get_langfuse()
@@ -87,6 +109,7 @@ def observe_call(
                             "window_id": ctx.window_id,
                             "point_id": ctx.point_id,
                             "point_ordinal": ctx.point_ordinal,
+                            "prompt_version_hash": ctx.prompt_version_hash,
                         },
                         tags=[stage, model, f"video:{ctx.video_id}"],
                     )
@@ -94,18 +117,33 @@ def observe_call(
                     logger.warning("Langfuse trace create failed: %s", exc)
                     trace = None
 
-            result_tuple = fn(ctx, *args, **kwargs)
+            try:
+                result_tuple = fn(ctx, *args, **kwargs)
+            except Exception as exc:
+                if trace is not None:
+                    try:
+                        updated_ctx = getattr(exc, "updated_ctx", None) or TraceContext(
+                            stage=ctx.stage,
+                            model=ctx.model,
+                            video_id=ctx.video_id,
+                            game_id=ctx.game_id,
+                            window_id=ctx.window_id,
+                            point_id=ctx.point_id,
+                            point_ordinal=ctx.point_ordinal,
+                            prompt_version_hash=ctx.prompt_version_hash,
+                            terminal_status="error",
+                        )
+                        _update_trace(trace, Decimal("0"), 0, 0, updated_ctx)
+                    except Exception as trace_exc:  # pragma: no cover
+                        logger.warning("Langfuse trace update failed: %s", trace_exc)
+                raise
+
             # Contract: (result, cost_usd, input_tokens, output_tokens, updated_ctx)
-            result, cost_usd, in_tokens, out_tokens, _updated_ctx = result_tuple
+            result, cost_usd, in_tokens, out_tokens, updated_ctx = result_tuple
 
             if trace is not None:
                 try:
-                    trace.update(
-                        output={"cost_usd": str(cost_usd), "input_tokens": in_tokens, "output_tokens": out_tokens},
-                    )
-                    trace.score(name="cost_usd", value=float(cost_usd))
-                    trace.score(name="input_tokens", value=float(in_tokens))
-                    trace.score(name="output_tokens", value=float(out_tokens))
+                    _update_trace(trace, cost_usd, in_tokens, out_tokens, updated_ctx)
                 except Exception as exc:  # pragma: no cover
                     logger.warning("Langfuse trace update failed: %s", exc)
 
@@ -124,4 +162,9 @@ def observe_call(
     return decorator
 
 
-__all__ = ["get_langfuse", "observe_call", "TraceContext"]
+def prompt_version_hash(prompt: str) -> str:
+    """Return the canonical 12-char prompt hash used for cache identity."""
+    return hashlib.sha256(prompt.encode()).hexdigest()[:12]
+
+
+__all__ = ["get_langfuse", "observe_call", "prompt_version_hash", "TraceContext"]

@@ -124,3 +124,62 @@ def test_prompt_version_hash_is_non_empty_and_prompt_sensitive():
     # Hash is stable (same input = same output)
     hash_a_repeat = hashlib.sha256(prompt_a.encode()).hexdigest()[:12]
     assert ctx_a.prompt_version_hash == hash_a_repeat
+
+
+def test_observe_call_updates_trace_on_exception(monkeypatch):
+    from sva.observability.langfuse import TraceContext, observe_call
+
+    updates: list[dict] = []
+    scores: list[tuple[str, float]] = []
+
+    class FakeTrace:
+        def update(self, *, output):
+            updates.append(output)
+
+        def score(self, *, name, value):
+            scores.append((name, value))
+
+    class FakeLangfuse:
+        def trace(self, **kwargs):
+            return FakeTrace()
+
+    class Boom(RuntimeError):
+        pass
+
+    monkeypatch.setattr("sva.observability.langfuse.get_langfuse", lambda: FakeLangfuse())
+
+    @observe_call(stage="perceive", model="dummy-model")
+    def fake_perceive(ctx):
+        exc = Boom("boom")
+        exc.updated_ctx = TraceContext(
+            stage=ctx.stage,
+            model=ctx.model,
+            video_id=ctx.video_id,
+            game_id=ctx.game_id,
+            window_id=ctx.window_id,
+            point_id=ctx.point_id,
+            point_ordinal=ctx.point_ordinal,
+            prompt_version_hash="abc123def456",
+            latency_ms=250,
+            retry_count=3,
+            terminal_status="retry_exhausted",
+        )
+        raise exc
+
+    ctx = TraceContext(stage="perceive", model="dummy-model", video_id="vid_x", game_id="game_x")
+
+    with pytest.raises(Boom):
+        fake_perceive(ctx)
+
+    assert updates == [
+        {
+            "cost_usd": "0",
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "latency_ms": 250,
+            "retry_count": 3,
+            "terminal_status": "retry_exhausted",
+            "prompt_version_hash": "abc123def456",
+        }
+    ]
+    assert ("latency_ms", 250.0) in scores

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
 from sqlalchemy import text
 
@@ -58,3 +60,184 @@ def test_gemini_perceiver_emits_valid_observation():
 
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM jobs WHERE game_id = :g"), {"g": game_id})
+
+
+def test_gemini_perceiver_populates_prompt_hash_and_ambiguity_fields(monkeypatch):
+    from google.genai import types
+    from sva.observability import TraceContext
+    from sva.perceive import GeminiPerceiver, PerceiveWindow
+
+    class FakeFiles:
+        def upload(self, *, file, config):
+            return types.File(name="files/uploaded-1", uri="gs://fake/video.mp4")
+
+    class FakeModels:
+        def generate_content(self, *, model, contents, config):
+            assert model == "gemini-2.5-flash"
+            assert config.response_schema is not None
+            return SimpleNamespace(
+                model_version="gemini-2.5-flash-001",
+                response_id="resp_123",
+                usage_metadata=types.GenerateContentResponseUsageMetadata(
+                    prompt_token_count=321,
+                    candidates_token_count=45,
+                    total_token_count=366,
+                ),
+                parsed={
+                    "schema_version": "1.0",
+                    "observation_id": "obs_fake_001",
+                    "window_id": "ignored_by_adapter",
+                    "video_id": "ignored_by_adapter",
+                    "video_ts_start_ms": 0,
+                    "video_ts_end_ms": 0,
+                    "observation_ts_ms": 900,
+                    "scene": {
+                        "field_visible": "partial",
+                        "camera": "sideline",
+                        "lighting": "ok",
+                        "obstruction": False,
+                        "multiple_discs_possible": True,
+                    },
+                    "disc": {
+                        "visible": False,
+                        "visibility_quality": "likely_present_not_visible",
+                        "in_air": False,
+                        "possessor_team": "unknown",
+                        "possessor_role": "none",
+                    },
+                    "players": {"dark_count_visible": 5, "light_count_visible": 4},
+                    "actions_detected": [],
+                    "text_observed": [],
+                    "free_form_note": "ambiguous disc",
+                    "model": {
+                        "provider": "gemini",
+                        "model_id": "ignored",
+                        "version": "ignored",
+                    },
+                    "confidence_overall": 0.4,
+                },
+            )
+
+    fake_client = SimpleNamespace(files=FakeFiles(), models=FakeModels())
+    monkeypatch.setattr("sva.perceive.adapters.gemini._get_client", lambda: fake_client)
+    monkeypatch.setattr("sva.observability.langfuse.get_langfuse", lambda: None)
+    monkeypatch.setattr("sva.observability.cost.record_job_cost", lambda game_id, delta_usd: None)
+
+    window = PerceiveWindow(
+        window_id="win_ambiguous_1",
+        video_id="vid_test",
+        video_ts_start_ms=0,
+        video_ts_end_ms=2000,
+        transcoded_path="/tmp/fake.mp4",
+    )
+    ctx = TraceContext(stage="perceive", model="gemini-2.5-flash", video_id="vid_test", game_id="game_test")
+
+    obs = GeminiPerceiver().perceive(ctx, window)
+    assert obs.window_id == "win_ambiguous_1"
+    assert obs.video_id == "vid_test"
+    assert obs.model.provider == "gemini"
+    assert obs.model.model_id == "gemini-2.5-flash"
+    assert obs.scene.multiple_discs_possible is True
+    assert obs.disc.visibility_quality == "likely_present_not_visible"
+    assert obs.raw_response_ref == "resp_123"
+
+
+def test_gemini_perceiver_retries_once_then_succeeds(monkeypatch):
+    from google.genai import types
+    from sva.observability import TraceContext
+    from sva.perceive import GeminiPerceiver, PerceiveWindow
+
+    class RetryableError(RuntimeError):
+        status_code = 429
+
+    calls = {"count": 0}
+
+    class FakeFiles:
+        def upload(self, *, file, config):
+            return types.File(name="files/uploaded-2", uri="gs://fake/video.mp4")
+
+    class FakeModels:
+        def generate_content(self, *, model, contents, config):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise RetryableError("rate limit")
+            return SimpleNamespace(
+                model_version="gemini-2.5-flash-001",
+                response_id="resp_456",
+                usage_metadata=types.GenerateContentResponseUsageMetadata(
+                    prompt_token_count=100,
+                    candidates_token_count=10,
+                    total_token_count=110,
+                ),
+                parsed={
+                    "schema_version": "1.0",
+                    "observation_id": "obs_retry_001",
+                    "window_id": "win_retry_1",
+                    "video_id": "vid_retry",
+                    "video_ts_start_ms": 0,
+                    "video_ts_end_ms": 2000,
+                    "observation_ts_ms": 1000,
+                    "scene": {},
+                    "disc": {},
+                    "players": {},
+                    "actions_detected": [],
+                    "text_observed": [],
+                    "free_form_note": "",
+                    "model": {"provider": "gemini", "model_id": "ignored", "version": "ignored"},
+                    "confidence_overall": 0.5,
+                },
+            )
+
+    fake_client = SimpleNamespace(files=FakeFiles(), models=FakeModels())
+    monkeypatch.setattr("sva.perceive.adapters.gemini._get_client", lambda: fake_client)
+    monkeypatch.setattr("sva.perceive.adapters.gemini.time.sleep", lambda _: None)
+    monkeypatch.setattr("sva.observability.langfuse.get_langfuse", lambda: None)
+    monkeypatch.setattr("sva.observability.cost.record_job_cost", lambda game_id, delta_usd: None)
+
+    window = PerceiveWindow(
+        window_id="win_retry_1",
+        video_id="vid_retry",
+        video_ts_start_ms=0,
+        video_ts_end_ms=2000,
+        transcoded_path="/tmp/fake.mp4",
+    )
+    ctx = TraceContext(stage="perceive", model="gemini-2.5-flash", video_id="vid_retry", game_id="game_retry")
+
+    obs = GeminiPerceiver().perceive(ctx, window)
+    assert obs.observation_id == "obs_retry_001"
+    assert calls["count"] == 2
+
+
+def test_gemini_perceiver_raises_after_retry_exhaustion(monkeypatch):
+    from google.genai import types
+    from sva.observability import TraceContext
+    from sva.perceive import GeminiPerceiver, PerceiveWindow
+
+    class RetryableError(RuntimeError):
+        status_code = 429
+
+    class FakeFiles:
+        def upload(self, *, file, config):
+            return types.File(name="files/uploaded-3", uri="gs://fake/video.mp4")
+
+    class FakeModels:
+        def generate_content(self, *, model, contents, config):
+            raise RetryableError("too many requests")
+
+    fake_client = SimpleNamespace(files=FakeFiles(), models=FakeModels())
+    monkeypatch.setattr("sva.perceive.adapters.gemini._get_client", lambda: fake_client)
+    monkeypatch.setattr("sva.perceive.adapters.gemini.time.sleep", lambda _: None)
+    monkeypatch.setattr("sva.observability.langfuse.get_langfuse", lambda: None)
+    monkeypatch.setattr("sva.observability.cost.record_job_cost", lambda game_id, delta_usd: None)
+
+    window = PerceiveWindow(
+        window_id="win_retry_2",
+        video_id="vid_retry",
+        video_ts_start_ms=0,
+        video_ts_end_ms=2000,
+        transcoded_path="/tmp/fake.mp4",
+    )
+    ctx = TraceContext(stage="perceive", model="gemini-2.5-flash", video_id="vid_retry", game_id="game_retry")
+
+    with pytest.raises(RetryableError):
+        GeminiPerceiver().perceive(ctx, window)
