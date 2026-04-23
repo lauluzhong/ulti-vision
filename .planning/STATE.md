@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-04-23T09:13:34.446Z"
+last_updated: "2026-04-23T10:35:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 8
-  completed_plans: 5
-  percent: 63
+  completed_plans: 6
+  percent: 75
 ---
 
 # Project State
@@ -22,14 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Phase 2 planning complete — ready to execute 02-01 (Source Intake & Rights-Safe Normalization)
+**Current Focus:** Phase 02 Wave 2 — Point Detection & Persistence (`02-02`)
 
 ## Current Position
 
-Phase: 02
+Phase: 02 (ingest-point-detection) — EXECUTING
+Plan: 2 of 3
 **Next Phase:** 2 (Ingest & Point Detection)
-**Status:** Ready to execute
-**Progress:** Phase 2 planned, 3 plans queued for execution
+**Status:** Executing Phase 02
+**Progress:** Phase 2 executing, 1 of 3 plans complete
 
 ```
 Roadmap  ████████████ 100%
@@ -75,7 +76,8 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 2 starting with `02-01` (source intake and rights-safe normalization)
+- [ ] Execute Phase 2 `02-02` (point detection and persistence)
+- [ ] Execute Phase 2 `02-03` (point-aware pipeline contracts)
 - [ ] [ADVISORY] Before Phase 2 execution: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the 6 DB-gated skips to PASSED
 
@@ -88,10 +90,11 @@ None. Phase 2 is planned and ready for execution.
 - 2026-04-20: Roadmap created with 7 phases, 45/45 requirement coverage, granularity=standard.
 - 2026-04-21: Phase 1 planned — 5 plans across 4 waves (01-01 schemas, 01-02 infra/DB, 01-03 ingest, 01-04 adapters/observability, 01-05 CLI/pipeline).
 - 2026-04-22: Phase 1 **COMPLETE**. All 5 REQ-IDs (INGEST-03/04/05, OBS-01/02) achieved with code + test evidence. Langfuse trace delivery live-verified by user against Cloud dashboard (5/5 checklist items). Swap-safe contracts proven via conformance test. Narrow vertical slice traverses every architectural boundary end-to-end.
+- 2026-04-23: Phase 2 `02-01` complete. Shared source-intake service ships for local files + approved public URLs, URL rights acknowledgments persist in `rights_acks`, and thin CLI/API intake surfaces are wired without breaking the existing `sva ingest` pipeline path.
 
 ## Session Continuity
 
-**Resume point:** Execute Phase 2, starting with `02-01` (Source Intake & Rights-Safe Normalization), then `02-02` (Point Detection & Persistence), then `02-03` (Point-Aware Pipeline Contracts).
+**Resume point:** Execute `02-02` (Point Detection & Persistence), then `02-03` (Point-Aware Pipeline Contracts).
 
 **Recent artifacts:**
 
@@ -107,7 +110,9 @@ None. Phase 2 is planned and ready for execution.
 - `.planning/research/PITFALLS.md` — 12 critical pitfalls mapped to phases
 - `.planning/phases/02-ingest-point-detection/02-CONTEXT.md` — locked implementation decisions for Phase 2
 - `.planning/phases/02-ingest-point-detection/02-RESEARCH.md` — Phase 2 planning memo
+- `.planning/phases/02-ingest-point-detection/02-PATTERNS.md` — code analogs and file-level implementation patterns
 - `.planning/phases/02-ingest-point-detection/02-01-PLAN.md` — source intake and rights-safe normalization
+- `.planning/phases/02-ingest-point-detection/02-01-SUMMARY.md` — completed Wave 1 ingest surface work
 - `.planning/phases/02-ingest-point-detection/02-02-PLAN.md` — point detection and persistence
 - `.planning/phases/02-ingest-point-detection/02-03-PLAN.md` — point-aware event contract and pipeline propagation
 
@@ -115,3 +120,4 @@ None. Phase 2 is planned and ready for execution.
 *State initialized: 2026-04-20 after roadmap creation*
 *Phase 1 complete: 2026-04-22*
 *Phase 2 planned: 2026-04-23*
+*Phase 2 plan 02-01 complete: 2026-04-23*

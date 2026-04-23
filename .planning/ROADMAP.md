@@ -37,7 +37,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   2. An iPhone HEVC VFR fixture flows through ingest without timestamp drift — the resulting events carry timestamps within ±2 seconds of manually-verified values.
   3. Every VLM and LLM call has a persisted trace in Langfuse with `video_id`, `model`, pipeline stage, token count, and cost; the jobs table aggregates cost-per-game and it is queryable.
   4. Pydantic `Observation`, `Event`, and `MemoryRecord` models exist in code; switching the VLM backend string value changes only the adapter file, not the schema or any downstream consumer.
-**Plans**: TBD
+**Plans**: 02-01 source intake and rights-safe normalization; 02-02 point detection and persistence; 02-03 point-aware pipeline contracts
 **UI hint**: no
 
 ### Phase 2: Ingest & Point Detection
@@ -119,7 +119,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Narrow Vertical Slice | 5/5 | Complete    | 2026-04-23 |
-| 2. Ingest & Point Detection | 0/TBD | Not started | - |
+| 2. Ingest & Point Detection | 1/3 | In progress | - |
 | 3. Perception Layer | 0/TBD | Not started | - |
 | 4. Interpretation & Event Taxonomy | 0/TBD | Not started | - |
 | 5. Memory & Correction Loop | 0/TBD | Not started | - |
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-22 — Phase 1 marked complete after verification (5/5 REQ-IDs achieved, 4/4 success-criteria truths satisfied)*
+*Last updated: 2026-04-23 — Phase 2 execution started; 02-01 complete, 02-02 next*
