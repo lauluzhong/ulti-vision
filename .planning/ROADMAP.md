@@ -61,7 +61,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   2. Each window produces `Observation` records conforming to the versioned schema (`scene`, `disc`, `players`, `actions_detected`, `text_observed`, `confidence_overall`); the same window fed to a different VLM backend produces the same schema shape.
   3. Re-running perceive on a window whose `(video_id, window_id, prompt_version_hash)` already exists in cache returns the cached Observations without a new VLM call — Langfuse shows zero duplicate calls for the same triple.
   4. Gemini rate-limit responses trigger exponential backoff with cap; each call records latency and cost against the game_id and window_id.
-**Plans**: TBD
+**Plans**: 03-01 observations persistence and cache contract; 03-02 Gemini adapter and fps/schema enforcement; 03-03 point-aware pipeline cache integration and verification
 **UI hint**: no
 
 ### Phase 4: Interpretation & Event Taxonomy
@@ -120,7 +120,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 |-------|----------------|--------|-----------|
 | 1. Foundation & Narrow Vertical Slice | 5/5 | Complete    | 2026-04-23 |
 | 2. Ingest & Point Detection | 3/3 | Complete | 2026-04-23 |
-| 3. Perception Layer | 0/TBD | Not started | - |
+| 3. Perception Layer | 0/3 | Planned | - |
 | 4. Interpretation & Event Taxonomy | 0/TBD | Not started | - |
 | 5. Memory & Correction Loop | 0/TBD | Not started | - |
 | 6. Async Orchestration & API | 0/TBD | Not started | - |
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-23 — Phase 2 complete; Phase 3 perception planning next*
+*Last updated: 2026-04-23 — Phase 3 planned; 03-01 execution next*
