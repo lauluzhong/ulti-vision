@@ -14,7 +14,7 @@ progress:
 
 # Project State
 
-**Last updated:** 2026-04-22
+**Last updated:** 2026-04-23
 
 ## Project Reference
 
@@ -22,14 +22,14 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Phase 1 **COMPLETE** ✓ — ready for `/gsd-transition` to Phase 2 (Ingest & Point Detection)
+**Current Focus:** Phase 2 planning complete — ready to execute 02-01 (Source Intake & Rights-Safe Normalization)
 
 ## Current Position
 
 Phase: 02
 **Next Phase:** 2 (Ingest & Point Detection)
 **Status:** Ready to execute
-**Progress:** Phase 1/7 (14%)
+**Progress:** Phase 2 planned, 3 plans queued for execution
 
 ```
 Roadmap  ████████████ 100%
@@ -75,13 +75,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Run `/gsd-transition 1` to advance to Phase 2
+- [ ] Execute Phase 2 starting with `02-01` (source intake and rights-safe normalization)
 - [ ] [ADVISORY] Before Phase 2 execution: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the 6 DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 1 is ready for transition.
+None. Phase 2 is planned and ready for execution.
 
 ### Recent Decisions Log
 
@@ -91,7 +91,7 @@ None. Phase 1 is ready for transition.
 
 ## Session Continuity
 
-**Resume point:** Next action is `/gsd-transition 1` to advance to Phase 2 (Ingest & Point Detection — INGEST-01, INGEST-02, POINT-01, POINT-03).
+**Resume point:** Execute Phase 2, starting with `02-01` (Source Intake & Rights-Safe Normalization), then `02-02` (Point Detection & Persistence), then `02-03` (Point-Aware Pipeline Contracts).
 
 **Recent artifacts:**
 
@@ -105,7 +105,13 @@ None. Phase 1 is ready for transition.
 - `.planning/research/FEATURES.md` — feature prioritization and coach-value ranking
 - `.planning/research/ARCHITECTURE.md` — 5-package pipeline with orthogonal memory
 - `.planning/research/PITFALLS.md` — 12 critical pitfalls mapped to phases
+- `.planning/phases/02-ingest-point-detection/02-CONTEXT.md` — locked implementation decisions for Phase 2
+- `.planning/phases/02-ingest-point-detection/02-RESEARCH.md` — Phase 2 planning memo
+- `.planning/phases/02-ingest-point-detection/02-01-PLAN.md` — source intake and rights-safe normalization
+- `.planning/phases/02-ingest-point-detection/02-02-PLAN.md` — point detection and persistence
+- `.planning/phases/02-ingest-point-detection/02-03-PLAN.md` — point-aware event contract and pipeline propagation
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
 *Phase 1 complete: 2026-04-22*
+*Phase 2 planned: 2026-04-23*
