@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-04-23T16:10:00.000Z"
+status: planning
+last_updated: "2026-04-23T17:10:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -22,21 +22,21 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Execute Phase 03 Wave 2 — Point-Aware Pipeline Cache Integration (`03-03`)
+**Current Focus:** Start Phase 04 discuss/plan — Interpretation & Event Taxonomy
 
 ## Current Position
 
-Phase: 03 (perception-layer) — EXECUTING
-Plan: 2 of 3
-**Next Phase:** 3 (Perception Layer)
-**Status:** Executing Phase 03
-**Progress:** Phase 3 executing, 2 of 3 plans complete
+Phase: 04 (interpretation-event-taxonomy) — PLANNING
+Plan: 0 of TBD
+**Next Phase:** 4 (Interpretation & Event Taxonomy)
+**Status:** Phase 3 complete; ready to discuss and plan Phase 04
+**Progress:** Phase 3 complete; Phase 4 not yet planned
 
 ```
 Roadmap  ████████████ 100%
 Phase 1  ████████████ 100% ✓
 Phase 2  ████████████ 100% ✓
-Phase 3  ████████░░░░  67%
+Phase 3  ████████████ 100% ✓
 Phase 4  ░░░░░░░░░░░░   0%
 Phase 5  ░░░░░░░░░░░░   0%
 Phase 6  ░░░░░░░░░░░░   0%
@@ -49,8 +49,8 @@ Phase 7  ░░░░░░░░░░░░   0%
 |--------|--------|---------|
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
-| Phases complete | 7 | 2 |
-| Plans complete | 11 (Phases 1-3) | 9/11 |
+| Phases complete | 7 | 3 |
+| Plans complete | 11 (Phases 1-3) | 11/11 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 3 `03-03` (point-aware pipeline cache integration and verification)
+- [ ] Start Phase 4 discuss/plan (`INTERPRET-*`, `EVENT-*` requirements)
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 3 is in execution and 03-03 is unblocked.
+None. Phase 3 is complete and Phase 4 planning is unblocked.
 
 ### Recent Decisions Log
 
@@ -95,10 +95,11 @@ None. Phase 3 is in execution and 03-03 is unblocked.
 - 2026-04-23: Phase 3 planned. Context, research, pattern mapping, and three executable plans now define the perception-layer path: persisted observations and cache contract first, real Gemini adapter second, and pipeline cache integration/verification third.
 - 2026-04-23: Phase 3 `03-01` complete. The repo now has refined Observation ambiguity fields, an `observations` table, and exact-triple cache-key DAO helpers keyed on `(video_id, window_id, prompt_version_hash)`.
 - 2026-04-23: Phase 3 `03-02` complete. GeminiPerceiver now uses the real Gemini 2.5 Flash native-video path, emits stable prompt hashes, and records latency/retry/terminal-status observability on both success and failure paths.
+- 2026-04-23: Phase 3 `03-03` complete. Sampling now honors the 1-3 fps envelope, `run_window(...)` is cache-first and observable on cache hits, and the point-aware pipeline persists observations before interpretation while reusing cached observations on reruns.
 
 ## Session Continuity
 
-**Resume point:** Execute `03-03` (Point-Aware Pipeline Cache Integration & Verification).
+**Resume point:** Start Phase 04 discuss/plan (Interpretation & Event Taxonomy).
 
 **Recent artifacts:**
 
@@ -129,6 +130,7 @@ None. Phase 3 is in execution and 03-03 is unblocked.
 - `.planning/phases/03-perception-layer/03-02-PLAN.md` — Gemini adapter and fps/schema enforcement
 - `.planning/phases/03-perception-layer/03-02-SUMMARY.md` — completed Wave 1 real Gemini adapter and perception observability work
 - `.planning/phases/03-perception-layer/03-03-PLAN.md` — pipeline cache integration and verification
+- `.planning/phases/03-perception-layer/03-03-SUMMARY.md` — completed Wave 2 cache-first runner and point-aware pipeline reuse work
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
@@ -140,3 +142,5 @@ None. Phase 3 is in execution and 03-03 is unblocked.
 *Phase 3 planned: 2026-04-23*
 *Phase 3 plan 03-01 complete: 2026-04-23*
 *Phase 3 plan 03-02 complete: 2026-04-23*
+*Phase 3 plan 03-03 complete: 2026-04-23*
+*Phase 3 complete: 2026-04-23*

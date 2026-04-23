@@ -20,7 +20,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 - [x] **Phase 1: Foundation & Narrow Vertical Slice** - Swap-safe schemas, CFR transcode, observability, and a single-clip end-to-end CLI proof that every boundary works *(complete 2026-04-22)*
 - [x] **Phase 2: Ingest & Point Detection** - Full file/URL ingest and point-boundary detection pass that gates every downstream per-point computation *(complete 2026-04-23)*
-- [ ] **Phase 3: Perception Layer** - VLM adapter with structured Observation output and per-window caching so prompt iteration is cheap
+- [x] **Phase 3: Perception Layer** - VLM adapter with structured Observation output and per-window caching so prompt iteration is cheap *(complete 2026-04-23)*
 - [ ] **Phase 4: Interpretation & Event Taxonomy** - LLM adapter with USAU-rule composition that emits the full v1 event set with schema-validated output
 - [ ] **Phase 5: Memory & Correction Loop** - Model-agnostic memory store with tag+vector retrieval, scope-gated promotion, and a correction loop ready to absorb alpha feedback
 - [ ] **Phase 6: Async Orchestration & API** - Dramatiq job queue, resume-on-crash workflow, full HTTP API surface, and CSV export
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-23 — Phase 3 execution in progress; 03-01 and 03-02 complete, 03-03 next*
+*Last updated: 2026-04-23 — Phase 3 complete; Phase 4 planning next*
