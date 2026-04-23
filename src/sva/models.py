@@ -31,6 +31,7 @@ Camera = Literal["sideline", "endzone", "elevated", "handheld", "unknown"]
 Lighting = Literal["ok", "harsh", "dim"]
 PossessorRole = Literal["thrower", "receiver", "defender", "none"]
 MemoryKind = Literal["few_shot_positive", "few_shot_negative", "rule", "correction"]
+DiscVisibilityQuality = Literal["clear", "blurry", "likely_present_not_visible", "absent"]
 
 
 class ModelMetadata(BaseModel):
@@ -48,11 +49,13 @@ class SceneObservation(BaseModel):
     camera: Camera = "unknown"
     lighting: Lighting = "ok"
     obstruction: bool = False
+    multiple_discs_possible: bool = False
 
 
 class DiscObservation(BaseModel):
     model_config = ConfigDict(extra="forbid")
     visible: bool = False
+    visibility_quality: DiscVisibilityQuality = "absent"
     in_air: bool = False
     possessor_team: Team = "unknown"
     possessor_role: PossessorRole = "none"
@@ -164,4 +167,5 @@ __all__ = [
     "MemorySource",
     "EventType",
     "Team",
+    "DiscVisibilityQuality",
 ]

@@ -33,6 +33,8 @@ def test_observation_round_trips_json():
     rehydrated = Observation.model_validate_json(payload)
     assert rehydrated == obs
     assert rehydrated.schema_version == "1.0"
+    assert rehydrated.disc.visibility_quality == "absent"
+    assert rehydrated.scene.multiple_discs_possible is False
 
 
 def test_event_enum_is_closed():
@@ -96,3 +98,18 @@ def test_no_vendor_field_leakage():
             lowered = name.lower()
             for f in forbidden:
                 assert f not in lowered, f"{cls.__name__}.{name} leaks vendor name '{f}'"
+
+
+def test_observation_ambiguity_defaults_are_safe():
+    obs = Observation(
+        observation_id="obs_02",
+        window_id="win_02",
+        video_id="vid_02",
+        video_ts_start_ms=0,
+        video_ts_end_ms=1000,
+        observation_ts_ms=500,
+        model=ModelMetadata(provider="gemini", model_id="gemini-2.5-flash", version="v1"),
+        confidence_overall=0.2,
+    )
+    assert obs.disc.visibility_quality == "absent"
+    assert obs.scene.multiple_discs_possible is False
