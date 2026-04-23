@@ -50,6 +50,20 @@ def test_jobs_and_events_tables_exist(migrated_db):
     assert "events" in rows
 
 
+def test_phase2_rights_ack_table_exists_when_migrated(migrated_db):
+    from sva.db import get_engine
+
+    eng = get_engine()
+    with eng.connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' ORDER BY table_name"
+            )
+        ).scalars().all()
+    assert "rights_acks" in rows
+
+
 def test_cost_aggregation_query_works(migrated_db):
     from sva.db import get_engine
 
