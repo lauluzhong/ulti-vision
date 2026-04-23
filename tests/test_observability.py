@@ -183,3 +183,74 @@ def test_observe_call_updates_trace_on_exception(monkeypatch):
         }
     ]
     assert ("latency_ms", 250.0) in scores
+
+
+def test_cache_hit_rerun_emits_prompt_hash_observability_without_perceiver_call(monkeypatch):
+    from sva.models import DiscObservation, ModelMetadata, Observation, PlayerCounts, SceneObservation
+    from sva.observability import TraceContext
+    from sva.perceive.adapters.base import PerceiveWindow
+    from sva.perceive.runner import run_window
+
+    traces: list[FakeTrace] = []
+
+    class FakeTrace:
+        def __init__(self):
+            self.metadata = None
+            self.output = None
+
+        def update(self, *, output):
+            self.output = output
+
+    class FakeLangfuse:
+        def trace(self, *, name, metadata, tags):
+            trace = FakeTrace()
+            trace.metadata = metadata
+            traces.append(trace)
+            return trace
+
+    class DummyPerceiver:
+        def prompt_hash_for(self, window):
+            return "cachehash001"
+
+        def perceive(self, ctx, window):
+            raise AssertionError("cache hit should skip perceiver")
+
+    monkeypatch.setattr("sva.perceive.runner.get_langfuse", lambda: FakeLangfuse())
+    monkeypatch.setattr(
+        "sva.perceive.runner.list_cached_observations",
+        lambda **kwargs: [
+            Observation(
+                observation_id="obs_cached_1",
+                window_id="win_vid_test_1fps_0_2000",
+                video_id="vid_test",
+                video_ts_start_ms=0,
+                video_ts_end_ms=2000,
+                observation_ts_ms=1000,
+                scene=SceneObservation(),
+                disc=DiscObservation(),
+                players=PlayerCounts(),
+                actions_detected=[],
+                text_observed=[],
+                free_form_note="cached",
+                model=ModelMetadata(provider="dummy", model_id="dummy-vlm", version="test"),
+                confidence_overall=0.5,
+            )
+        ],
+    )
+
+    ctx = TraceContext(stage="perceive", model="dummy-vlm", video_id="vid_test", game_id="game_test")
+    window = PerceiveWindow(
+        window_id="win_vid_test_1fps_0_2000",
+        video_id="vid_test",
+        video_ts_start_ms=0,
+        video_ts_end_ms=2000,
+        transcoded_path="/tmp/fake.mp4",
+    )
+
+    result = run_window(ctx, window, perceiver=DummyPerceiver())
+
+    assert result.observation_id == "obs_cached_1"
+    assert len(traces) == 1
+    assert traces[0].metadata["prompt_version_hash"] == "cachehash001"
+    assert traces[0].output["terminal_status"] == "cache_hit"
+    assert traces[0].output["cache_hit"] is True

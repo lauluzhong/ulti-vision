@@ -200,8 +200,11 @@ class GeminiPerceiver:
     model_id: str = _MODEL_ID
     provider: str = "gemini"
 
+    def prompt_hash_for(self, window: PerceiveWindow) -> str:
+        return prompt_version_hash(_build_prompt(window))
+
     def perceive(self, ctx: TraceContext, window: PerceiveWindow) -> Observation:
-        prompt_hash = prompt_version_hash(_build_prompt(window))
+        prompt_hash = self.prompt_hash_for(window)
         enriched = TraceContext(
             stage="perceive",
             model=_MODEL_ID,

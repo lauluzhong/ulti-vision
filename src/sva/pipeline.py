@@ -18,11 +18,12 @@ from sqlalchemy import text
 from sva.db import get_engine
 from sva.events_dao import insert_event
 from sva.ingest import IngestResult, ingest_clip
+from sva.ingest.sampler import make_window_id
 from sva.interpret import make_default_interpreter, run_point
 from sva.memory import MemoryRetriever, RetrievalQuery
 from sva.models import Event, Observation
 from sva.observability import TraceContext
-from sva.perceive import PerceiveWindow, make_default_perceiver, run_window
+from sva.perceive import PerceiveWindow, insert_observations, make_default_perceiver, run_window
 from sva.points import BoundarySignal, PointBoundaryCandidate, PointRecord, detect_points
 from sva.points.dao import insert_points, list_points
 
@@ -108,9 +109,11 @@ def _apply_point_scope(event: Event, point: PointRecord, fallback_ts_ms: int) ->
 def run_pipeline(
     source_path: Path | str,
     game_id: str | None = None,
+    *,
+    target_fps: int = 1,
 ) -> PipelineResult:
     """Run one clip through the Phase 1 narrow vertical slice."""
-    ing = ingest_clip(source_path, game_id=game_id)
+    ing = ingest_clip(source_path, game_id=game_id, target_fps=target_fps)
     logger.info("Ingested %s -> %s (game_id=%s)", ing.source_path, ing.transcoded_path, ing.game_id)
 
     perceiver = make_default_perceiver()
@@ -139,7 +142,12 @@ def run_pipeline(
         if owning_point is None:
             continue
         window = PerceiveWindow(
-            window_id=f"win_{ing.video_id}_{start_ms}",
+            window_id=make_window_id(
+                video_id=ing.video_id,
+                start_ms=start_ms,
+                end_ms=end_ms,
+                fps=target_fps,
+            ),
             video_id=ing.video_id,
             video_ts_start_ms=start_ms,
             video_ts_end_ms=end_ms,
@@ -155,7 +163,18 @@ def run_pipeline(
             point_ordinal=owning_point.point_ordinal,
         )
         try:
-            obs = run_window(window_ctx, window, perceiver=perceiver)
+            obs = run_window(
+                window_ctx,
+                window,
+                perceiver=perceiver,
+                on_cache_miss=lambda observation, prompt_hash, point=owning_point: insert_observations(
+                    game_id=ing.game_id,
+                    point_id=point.point_id,
+                    point_ordinal=point.point_ordinal,
+                    prompt_version_hash=prompt_hash,
+                    observations=[observation],
+                ),
+            )
             observations.append(obs)
             observations_by_point[owning_point.point_id].append(obs)
         except Exception as exc:

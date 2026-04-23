@@ -16,6 +16,8 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
 
     order: list[str] = []
     inserted_events: list[Event] = []
+    persisted_cache: dict[tuple[str, str, str], Observation] = {}
+    perceive_calls = {"count": 0}
     points = [
         PointRecord(
             point_id="game_test:pt_001",
@@ -37,7 +39,7 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
         ),
     ]
 
-    def fake_ingest_clip(source_path, game_id=None):
+    def fake_ingest_clip(source_path, game_id=None, target_fps=1):
         order.append("ingest")
         return IngestResult(
             video_id="vid_test",
@@ -77,9 +79,16 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
             order.append("retrieve")
             return []
 
-    def fake_run_window(ctx, window, perceiver=None):
-        order.append(f"perceive:{ctx.point_id}")
-        return Observation(
+    class DummyPerceiver:
+        model_id = "dummy-vlm"
+
+        def prompt_hash_for(self, window):
+            return f"hash:{window.window_id}"
+
+        def perceive(self, ctx, window):
+            perceive_calls["count"] += 1
+            order.append(f"perceive:{ctx.point_id}")
+            return Observation(
             observation_id=f"obs_{window.window_id}",
             window_id=window.window_id,
             video_id=window.video_id,
@@ -91,7 +100,13 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
             players=PlayerCounts(),
             model=ModelMetadata(provider="dummy", model_id="dummy-vlm", version="test"),
             confidence_overall=0.5,
-        )
+            )
+
+    def fake_insert_observations(*, game_id, point_id, point_ordinal, prompt_version_hash, observations, cache_hit=False):
+        for observation in observations:
+            key = (observation.video_id, observation.window_id, prompt_version_hash)
+            persisted_cache[key] = observation
+            order.append(f"persist_observation:{point_id}")
 
     def fake_run_point(ctx, observations, interpreter=None, retrieved=None):
         order.append(f"interpret:{ctx.point_id}")
@@ -117,22 +132,40 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
     monkeypatch.setattr("sva.pipeline.insert_points", fake_insert_points)
     monkeypatch.setattr("sva.pipeline.list_points", fake_list_points)
     monkeypatch.setattr("sva.pipeline.MemoryRetriever", DummyRetriever)
-    monkeypatch.setattr("sva.pipeline.make_default_perceiver", lambda: SimpleNamespace(model_id="dummy-vlm"))
+    monkeypatch.setattr("sva.pipeline.make_default_perceiver", lambda: DummyPerceiver())
     monkeypatch.setattr("sva.pipeline.make_default_interpreter", lambda: SimpleNamespace(model_id="dummy-llm"))
-    monkeypatch.setattr("sva.pipeline.run_window", fake_run_window)
+    monkeypatch.setattr("sva.pipeline.insert_observations", fake_insert_observations)
     monkeypatch.setattr("sva.pipeline.run_point", fake_run_point)
     monkeypatch.setattr("sva.pipeline.insert_event", fake_insert_event)
     monkeypatch.setattr("sva.pipeline._read_total_cost", lambda game_id: Decimal("1.23"))
     monkeypatch.setattr("sva.pipeline._mark_job_complete", lambda game_id: order.append("complete"))
+    monkeypatch.setattr(
+        "sva.perceive.runner.list_cached_observations",
+        lambda *, video_id, window_id, prompt_version_hash: [
+            persisted_cache[(video_id, window_id, prompt_version_hash)]
+        ] if (video_id, window_id, prompt_version_hash) in persisted_cache else [],
+    )
+    monkeypatch.setattr("sva.perceive.runner.get_langfuse", lambda: None)
 
     result = run_pipeline("tests/fixtures/cfr_baseline.mp4", game_id="game_test")
+    second_result = run_pipeline("tests/fixtures/cfr_baseline.mp4", game_id="game_test")
 
     assert result.events_inserted == 2
     assert result.observations == 2
+    assert second_result.events_inserted == 2
+    assert second_result.observations == 2
     assert order.index("detect") < order.index("perceive:game_test:pt_001")
     assert order.index("detect") < order.index("perceive:game_test:pt_002")
+    assert order.index("persist_observation:game_test:pt_001") < order.index("interpret:game_test:pt_001")
+    assert order.index("persist_observation:game_test:pt_002") < order.index("interpret:game_test:pt_002")
     assert order.index("interpret:game_test:pt_001") < order.index("persist_event:game_test:pt_001")
     assert order.index("interpret:game_test:pt_002") < order.index("persist_event:game_test:pt_002")
-    assert [event.point_id for event in inserted_events] == ["game_test:pt_001", "game_test:pt_002"]
-    assert [event.point_ordinal for event in inserted_events] == [1, 2]
-    assert [event.in_point_ts_ms for event in inserted_events] == [500, 999]
+    assert [event.point_id for event in inserted_events] == [
+        "game_test:pt_001",
+        "game_test:pt_002",
+        "game_test:pt_001",
+        "game_test:pt_002",
+    ]
+    assert [event.point_ordinal for event in inserted_events] == [1, 2, 1, 2]
+    assert [event.in_point_ts_ms for event in inserted_events] == [500, 999, 500, 999]
+    assert perceive_calls["count"] == 2

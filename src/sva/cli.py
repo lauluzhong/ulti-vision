@@ -48,7 +48,7 @@ def ingest(
         console.print("[yellow]--dry-run: no pipeline executed[/yellow]")
         raise typer.Exit(0)
 
-    result = run_pipeline(clip, game_id=game_id)
+    result = run_pipeline(clip, game_id=game_id, target_fps=fps)
 
     table = Table(title="Pipeline Result")
     table.add_column("Field")
