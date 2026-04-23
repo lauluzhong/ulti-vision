@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-04-23T10:35:00.000Z"
+last_updated: "2026-04-23T11:05:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
-  percent: 75
+  completed_plans: 7
+  percent: 88
 ---
 
 # Project State
@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Phase 02 Wave 2 — Point Detection & Persistence (`02-02`)
+**Current Focus:** Phase 02 Wave 3 — Point-Aware Pipeline Contracts (`02-03`)
 
 ## Current Position
 
 Phase: 02 (ingest-point-detection) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 **Next Phase:** 2 (Ingest & Point Detection)
 **Status:** Executing Phase 02
-**Progress:** Phase 2 executing, 1 of 3 plans complete
+**Progress:** Phase 2 executing, 2 of 3 plans complete
 
 ```
 Roadmap  ████████████ 100%
@@ -76,7 +76,6 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 2 `02-02` (point detection and persistence)
 - [ ] Execute Phase 2 `02-03` (point-aware pipeline contracts)
 - [ ] [ADVISORY] Before Phase 2 execution: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the 6 DB-gated skips to PASSED
@@ -91,10 +90,11 @@ None. Phase 2 is planned and ready for execution.
 - 2026-04-21: Phase 1 planned — 5 plans across 4 waves (01-01 schemas, 01-02 infra/DB, 01-03 ingest, 01-04 adapters/observability, 01-05 CLI/pipeline).
 - 2026-04-22: Phase 1 **COMPLETE**. All 5 REQ-IDs (INGEST-03/04/05, OBS-01/02) achieved with code + test evidence. Langfuse trace delivery live-verified by user against Cloud dashboard (5/5 checklist items). Swap-safe contracts proven via conformance test. Narrow vertical slice traverses every architectural boundary end-to-end.
 - 2026-04-23: Phase 2 `02-01` complete. Shared source-intake service ships for local files + approved public URLs, URL rights acknowledgments persist in `rights_acks`, and thin CLI/API intake surfaces are wired without breaking the existing `sva ingest` pipeline path.
+- 2026-04-23: Phase 2 `02-02` complete. First-class `points` persistence and staged OCR/pull/VLM tie-break detection landed, giving the repo stable point ids and detector outputs ready for pipeline integration.
 
 ## Session Continuity
 
-**Resume point:** Execute `02-02` (Point Detection & Persistence), then `02-03` (Point-Aware Pipeline Contracts).
+**Resume point:** Execute `02-03` (Point-Aware Pipeline Contracts).
 
 **Recent artifacts:**
 
@@ -114,6 +114,7 @@ None. Phase 2 is planned and ready for execution.
 - `.planning/phases/02-ingest-point-detection/02-01-PLAN.md` — source intake and rights-safe normalization
 - `.planning/phases/02-ingest-point-detection/02-01-SUMMARY.md` — completed Wave 1 ingest surface work
 - `.planning/phases/02-ingest-point-detection/02-02-PLAN.md` — point detection and persistence
+- `.planning/phases/02-ingest-point-detection/02-02-SUMMARY.md` — completed Wave 2 point layer work
 - `.planning/phases/02-ingest-point-detection/02-03-PLAN.md` — point-aware event contract and pipeline propagation
 
 ---
@@ -121,3 +122,4 @@ None. Phase 2 is planned and ready for execution.
 *Phase 1 complete: 2026-04-22*
 *Phase 2 planned: 2026-04-23*
 *Phase 2 plan 02-01 complete: 2026-04-23*
+*Phase 2 plan 02-02 complete: 2026-04-23*

@@ -119,7 +119,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Narrow Vertical Slice | 5/5 | Complete    | 2026-04-23 |
-| 2. Ingest & Point Detection | 1/3 | In progress | - |
+| 2. Ingest & Point Detection | 2/3 | In progress | - |
 | 3. Perception Layer | 0/TBD | Not started | - |
 | 4. Interpretation & Event Taxonomy | 0/TBD | Not started | - |
 | 5. Memory & Correction Loop | 0/TBD | Not started | - |
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-23 — Phase 2 execution started; 02-01 complete, 02-02 next*
+*Last updated: 2026-04-23 — Phase 2 execution in progress; 02-01 and 02-02 complete, 02-03 next*
