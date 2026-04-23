@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-04-23T15:15:00.000Z"
+last_updated: "2026-04-23T16:10:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 11
-  completed_plans: 9
-  percent: 82
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -22,21 +22,21 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Execute Phase 03 Wave 1 — Gemini Adapter & Perception Observability (`03-02`)
+**Current Focus:** Execute Phase 03 Wave 2 — Point-Aware Pipeline Cache Integration (`03-03`)
 
 ## Current Position
 
 Phase: 03 (perception-layer) — EXECUTING
-Plan: 1 of 3
+Plan: 2 of 3
 **Next Phase:** 3 (Perception Layer)
 **Status:** Executing Phase 03
-**Progress:** Phase 3 executing, 1 of 3 plans complete
+**Progress:** Phase 3 executing, 2 of 3 plans complete
 
 ```
 Roadmap  ████████████ 100%
 Phase 1  ████████████ 100% ✓
 Phase 2  ████████████ 100% ✓
-Phase 3  ████░░░░░░░░  33%
+Phase 3  ████████░░░░  67%
 Phase 4  ░░░░░░░░░░░░   0%
 Phase 5  ░░░░░░░░░░░░   0%
 Phase 6  ░░░░░░░░░░░░   0%
@@ -76,13 +76,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 3 `03-02` (Gemini adapter and perception observability)
+- [ ] Execute Phase 3 `03-03` (point-aware pipeline cache integration and verification)
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 3 is in execution and 03-02 is unblocked.
+None. Phase 3 is in execution and 03-03 is unblocked.
 
 ### Recent Decisions Log
 
@@ -94,10 +94,11 @@ None. Phase 3 is in execution and 03-02 is unblocked.
 - 2026-04-23: Phase 2 `02-03` complete. Events now persist non-null `point_id`, `point_ordinal`, and `in_point_ts_ms`, and the pipeline groups perception/interpretation work through persisted point rows before event writes.
 - 2026-04-23: Phase 3 planned. Context, research, pattern mapping, and three executable plans now define the perception-layer path: persisted observations and cache contract first, real Gemini adapter second, and pipeline cache integration/verification third.
 - 2026-04-23: Phase 3 `03-01` complete. The repo now has refined Observation ambiguity fields, an `observations` table, and exact-triple cache-key DAO helpers keyed on `(video_id, window_id, prompt_version_hash)`.
+- 2026-04-23: Phase 3 `03-02` complete. GeminiPerceiver now uses the real Gemini 2.5 Flash native-video path, emits stable prompt hashes, and records latency/retry/terminal-status observability on both success and failure paths.
 
 ## Session Continuity
 
-**Resume point:** Execute `03-02` (Gemini Adapter & Perception Observability).
+**Resume point:** Execute `03-03` (Point-Aware Pipeline Cache Integration & Verification).
 
 **Recent artifacts:**
 
@@ -126,6 +127,7 @@ None. Phase 3 is in execution and 03-02 is unblocked.
 - `.planning/phases/03-perception-layer/03-01-PLAN.md` — observations persistence and cache contract
 - `.planning/phases/03-perception-layer/03-01-SUMMARY.md` — completed Wave 1 observations persistence and cache backbone work
 - `.planning/phases/03-perception-layer/03-02-PLAN.md` — Gemini adapter and fps/schema enforcement
+- `.planning/phases/03-perception-layer/03-02-SUMMARY.md` — completed Wave 1 real Gemini adapter and perception observability work
 - `.planning/phases/03-perception-layer/03-03-PLAN.md` — pipeline cache integration and verification
 
 ---
@@ -137,3 +139,4 @@ None. Phase 3 is in execution and 03-02 is unblocked.
 *Phase 2 complete: 2026-04-23*
 *Phase 3 planned: 2026-04-23*
 *Phase 3 plan 03-01 complete: 2026-04-23*
+*Phase 3 plan 03-02 complete: 2026-04-23*

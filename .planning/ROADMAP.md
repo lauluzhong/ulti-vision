@@ -61,7 +61,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   2. Each window produces `Observation` records conforming to the versioned schema (`scene`, `disc`, `players`, `actions_detected`, `text_observed`, `confidence_overall`); the same window fed to a different VLM backend produces the same schema shape.
   3. Re-running perceive on a window whose `(video_id, window_id, prompt_version_hash)` already exists in cache returns the cached Observations without a new VLM call — Langfuse shows zero duplicate calls for the same triple.
   4. Gemini rate-limit responses trigger exponential backoff with cap; each call records latency and cost against the game_id and window_id.
-**Plans**: 03-01 observations persistence and cache contract; 03-02 Gemini adapter and fps/schema enforcement; 03-03 point-aware pipeline cache integration and verification
+**Plans**: 03-01 observations persistence and cache contract; 03-02 Gemini adapter and perception observability; 03-03 point-aware pipeline cache integration and verification
 **UI hint**: no
 
 ### Phase 4: Interpretation & Event Taxonomy
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-23 — Phase 3 execution in progress; 03-01 complete, 03-02 next*
+*Last updated: 2026-04-23 — Phase 3 execution in progress; 03-01 and 03-02 complete, 03-03 next*
