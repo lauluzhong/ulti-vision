@@ -41,7 +41,10 @@ def test_event_enum_is_closed():
         Event(
             event_id="e1",
             game_id="g1",
+            point_id="g1:pt_001",
+            point_ordinal=1,
             video_ts_ms=0,
+            in_point_ts_ms=0,
             type="not_a_real_event",  # type: ignore[arg-type]
             model=ModelMetadata(provider="anthropic", model_id="claude-sonnet-4-5", version="v1"),
         )
@@ -51,7 +54,10 @@ def test_event_player_id_is_always_none():
     e = Event(
         event_id="e1",
         game_id="g1",
+        point_id="g1:pt_001",
+        point_ordinal=1,
         video_ts_ms=0,
+        in_point_ts_ms=0,
         type="completion",
         model=ModelMetadata(provider="anthropic", model_id="claude-sonnet-4-5", version="v1"),
     )
@@ -61,7 +67,10 @@ def test_event_player_id_is_always_none():
         Event(
             event_id="e2",
             game_id="g1",
+            point_id="g1:pt_001",
+            point_ordinal=1,
             video_ts_ms=0,
+            in_point_ts_ms=0,
             type="completion",
             player_id="p_42",  # type: ignore[arg-type]
             model=ModelMetadata(provider="anthropic", model_id="claude-sonnet-4-5", version="v1"),

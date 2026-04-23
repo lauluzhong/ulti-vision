@@ -31,8 +31,10 @@ def _call_claude(
     event = Event(
         event_id=f"evt_{uuid.uuid4().hex[:12]}",
         game_id=ctx.game_id,
-        point_id=ctx.point_id,
+        point_id=ctx.point_id or f"{ctx.game_id}:pt_001",
+        point_ordinal=ctx.point_ordinal or 1,
         video_ts_ms=observations[0].observation_ts_ms if observations else 0,
+        in_point_ts_ms=observations[0].observation_ts_ms if observations else 0,
         type="unknown",
         team="unknown",
         details={"stub": True, "observations_in": len(observations), "memory_in": len(retrieved)},
@@ -65,6 +67,7 @@ class ClaudeInterpreter:
             game_id=ctx.game_id,
             window_id=ctx.window_id,
             point_id=ctx.point_id,
+            point_ordinal=ctx.point_ordinal,
         )
         return _call_claude(enriched, observations, retrieved)
 

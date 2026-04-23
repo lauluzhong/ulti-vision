@@ -73,6 +73,7 @@ class GeminiPerceiver:
             game_id=ctx.game_id,
             window_id=window.window_id,
             point_id=ctx.point_id,
+            point_ordinal=ctx.point_ordinal,
         )
         return _call_gemini(enriched, window)
 

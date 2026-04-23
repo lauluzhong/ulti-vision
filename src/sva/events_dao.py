@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Column, DateTime, ForeignKey, Numeric, Text
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, Numeric, Text, select
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.sql import func
 
@@ -18,8 +18,10 @@ class EventRow(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
     event_id = Column(Text, nullable=False, unique=True)
     game_id = Column(Text, ForeignKey("jobs.game_id", ondelete="CASCADE"), nullable=False, index=True)
-    point_id = Column(Text, nullable=True, index=True)
-    video_ts_ms = Column(Numeric(20, 0), nullable=False)  # bigint-compatible
+    point_id = Column(Text, nullable=False, index=True)
+    point_ordinal = Column(Integer, nullable=False)
+    video_ts_ms = Column(BigInteger, nullable=False)
+    in_point_ts_ms = Column(BigInteger, nullable=False)
     type = Column(Text, nullable=False, index=True)
     team = Column(Text, nullable=False)
     details = Column(JSONB, nullable=False, server_default="{}")
@@ -37,7 +39,9 @@ def insert_event(event: Event) -> None:
             event_id=event.event_id,
             game_id=event.game_id,
             point_id=event.point_id,
+            point_ordinal=event.point_ordinal,
             video_ts_ms=event.video_ts_ms,
+            in_point_ts_ms=event.in_point_ts_ms,
             type=event.type,
             team=event.team,
             details=event.details,
@@ -49,4 +53,15 @@ def insert_event(event: Event) -> None:
         session.add(row)
 
 
-__all__ = ["EventRow", "insert_event"]
+def list_event_rows_for_point(game_id: str, point_id: str) -> list[EventRow]:
+    with session_scope() as session:
+        return list(
+            session.execute(
+                select(EventRow)
+                .where(EventRow.game_id == game_id, EventRow.point_id == point_id)
+                .order_by(EventRow.video_ts_ms.asc())
+            ).scalars()
+        )
+
+
+__all__ = ["EventRow", "insert_event", "list_event_rows_for_point"]

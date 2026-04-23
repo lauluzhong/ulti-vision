@@ -68,6 +68,21 @@ def test_run_pipeline_produces_event_row():
             text("SELECT status, cost_usd, duration_s FROM jobs WHERE game_id = :g"),
             {"g": game_id},
         ).fetchone()
+        event_rows = conn.execute(
+            text(
+                "SELECT point_id, point_ordinal, in_point_ts_ms "
+                "FROM events WHERE game_id = :g ORDER BY video_ts_ms"
+            ),
+            {"g": game_id},
+        ).fetchall()
+        point_count = conn.execute(
+            text("SELECT count(*) FROM points WHERE game_id = :g"),
+            {"g": game_id},
+        ).scalar()
+        point_scoped_count = conn.execute(
+            text("SELECT count(*) FROM events WHERE game_id = :g AND point_id = :p"),
+            {"g": game_id, "p": event_rows[0].point_id},
+        ).scalar()
         event_count = conn.execute(
             text("SELECT count(*) FROM events WHERE game_id = :g"),
             {"g": game_id},
@@ -77,6 +92,11 @@ def test_run_pipeline_produces_event_row():
     assert job_row.status == "complete"
     assert float(job_row.cost_usd) > 0
     assert event_count == 1
+    assert point_count == 1
+    assert point_scoped_count == 1
+    assert event_rows[0].point_id == f"{game_id}:pt_001"
+    assert event_rows[0].point_ordinal == 1
+    assert int(event_rows[0].in_point_ts_ms) >= 0
 
     # Cleanup
     with get_engine().begin() as conn:

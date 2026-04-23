@@ -51,13 +51,23 @@ def test_claude_interpreter_emits_valid_event():
             {"g": game_id, "v": "vid_test"},
         )
 
-    ctx = TraceContext(stage="interpret", model="claude-sonnet-4-5", video_id="vid_test", game_id=game_id)
+    ctx = TraceContext(
+        stage="interpret",
+        model="claude-sonnet-4-5",
+        video_id="vid_test",
+        game_id=game_id,
+        point_id=f"{game_id}:pt_001",
+        point_ordinal=1,
+    )
     obs_list = [_dummy_obs(window_id="win_1"), _dummy_obs(window_id="win_2")]
     event = ClaudeInterpreter().interpret(ctx, obs_list, retrieved=[])
 
     assert event.schema_version == "1.0"
     assert event.model.provider == "anthropic"
     assert event.model.model_id == "claude-sonnet-4-5"
+    assert event.point_id == f"{game_id}:pt_001"
+    assert event.point_ordinal == 1
+    assert event.in_point_ts_ms == 1000
     assert event.type == "unknown"
     assert len(event.source_observations) == 2
 
@@ -84,14 +94,18 @@ def test_run_point_accepts_custom_interpreter():
             return Event(
                 event_id="evt_dummy",
                 game_id=ctx.game_id,
+                point_id=ctx.point_id or f"{ctx.game_id}:pt_001",
+                point_ordinal=ctx.point_ordinal or 1,
                 video_ts_ms=0,
+                in_point_ts_ms=0,
                 type="unknown",
                 team="unknown",
                 model=ModelMetadata(provider="dummy", model_id="dummy-llm", version="test"),
             )
 
     d: Interpreter = DummyInterpreter()
-    ctx = TraceContext(stage="interpret", model="dummy-llm", video_id="v", game_id="g")
+    ctx = TraceContext(stage="interpret", model="dummy-llm", video_id="v", game_id="g", point_id="g:pt_001", point_ordinal=1)
     event = run_point(ctx, observations=[], interpreter=d)
     assert event.model.provider == "dummy"
+    assert event.point_id == "g:pt_001"
     assert event.type == "unknown"

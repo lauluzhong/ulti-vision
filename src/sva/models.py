@@ -106,9 +106,10 @@ class Event(BaseModel):
     schema_version: Literal["1.0"] = SCHEMA_VERSION
     event_id: str
     game_id: str
-    point_id: str | None = None              # Phase 2 populates this; Phase 1 may emit None
-    point_ordinal: int | None = None
+    point_id: str
+    point_ordinal: int = Field(ge=1)
     video_ts_ms: int = Field(ge=0)
+    in_point_ts_ms: int = Field(ge=0)
     type: EventType
     team: Team = "unknown"
     player_id: None = None                    # v1 contract — always None (PROJECT.md key decision)

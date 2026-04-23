@@ -34,6 +34,7 @@ class TraceContext:
     game_id: str
     window_id: str | None = None
     point_id: str | None = None
+    point_ordinal: int | None = None
     prompt_version_hash: str | None = None  # OBS-02: short SHA-256 hex of the prompt string (12 chars)
     # Compute as: hashlib.sha256(prompt.encode()).hexdigest()[:12]
     # Example: hashlib.sha256("Analyze this frame".encode()).hexdigest()[:12] == "3b5a2c1d4e6f"
@@ -85,6 +86,7 @@ def observe_call(
                             "game_id": ctx.game_id,
                             "window_id": ctx.window_id,
                             "point_id": ctx.point_id,
+                            "point_ordinal": ctx.point_ordinal,
                         },
                         tags=[stage, model, f"video:{ctx.video_id}"],
                     )
