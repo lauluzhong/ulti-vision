@@ -11,9 +11,9 @@ Scope definition: **v1 = what must be true to open alpha to 2–5 friendly coach
 
 - [ ] **INGEST-01**: User can upload a local video file (mp4, mov, m4v, webm) via the web UI
 - [ ] **INGEST-02**: User can submit a public video URL (YouTube, Vimeo, UFA stream pages) and the system resolves + fetches it
-- [ ] **INGEST-03**: System transcodes variable-frame-rate input to constant-frame-rate at ingest (fixes PyAV timestamp drift on iPhone HEVC and similar mobile footage)
-- [ ] **INGEST-04**: System normalizes ingested video to a single container/codec/resolution baseline for downstream sampling
-- [ ] **INGEST-05**: System persists raw video metadata (duration, source, uploader, upload timestamp) to the primary database
+- [x] **INGEST-03**: System transcodes variable-frame-rate input to constant-frame-rate at ingest (fixes PyAV timestamp drift on iPhone HEVC and similar mobile footage)
+- [x] **INGEST-04**: System normalizes ingested video to a single container/codec/resolution baseline for downstream sampling
+- [x] **INGEST-05**: System persists raw video metadata (duration, source, uploader, upload timestamp) to the primary database
 
 ### Points
 
@@ -82,8 +82,8 @@ Scope definition: **v1 = what must be true to open alpha to 2–5 friendly coach
 
 ### Observability
 
-- [ ] **OBS-01**: Per-call and per-game cost is attributed to `video_id`, model, and pipeline stage; aggregate cost per game is recorded
-- [ ] **OBS-02**: VLM and LLM call traces (prompt, response, timing, cost, prompt-version-hash) are persisted for debugging and eval replay
+- [x] **OBS-01**: Per-call and per-game cost is attributed to `video_id`, model, and pipeline stage; aggregate cost per game is recorded
+- [x] **OBS-02**: VLM and LLM call traces (prompt, response, timing, cost, prompt-version-hash) are persisted for debugging and eval replay
 
 ## v2 Requirements
 
@@ -152,9 +152,9 @@ Which phases cover which requirements. Updated by the roadmapper during roadmap 
 |-------------|-------|--------|
 | INGEST-01 | Phase 2 | Pending |
 | INGEST-02 | Phase 2 | Pending |
-| INGEST-03 | Phase 1 | Pending |
-| INGEST-04 | Phase 1 | Pending |
-| INGEST-05 | Phase 1 | Pending |
+| INGEST-03 | Phase 1 | Complete |
+| INGEST-04 | Phase 1 | Complete |
+| INGEST-05 | Phase 1 | Complete |
 | POINT-01 | Phase 2 | Pending |
 | POINT-02 | Phase 7 | Pending |
 | POINT-03 | Phase 2 | Pending |
@@ -193,8 +193,8 @@ Which phases cover which requirements. Updated by the roadmapper during roadmap 
 | EVAL-02 | Phase 7 | Pending |
 | EVAL-03 | Phase 7 | Pending |
 | EVAL-04 | Phase 7 | Pending |
-| OBS-01 | Phase 1 | Pending |
-| OBS-02 | Phase 1 | Pending |
+| OBS-01 | Phase 1 | Complete |
+| OBS-02 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 45 total

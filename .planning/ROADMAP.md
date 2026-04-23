@@ -118,7 +118,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Narrow Vertical Slice | 5/5 | Complete ✓ | 2026-04-22 |
+| 1. Foundation & Narrow Vertical Slice | 5/5 | Complete    | 2026-04-23 |
 | 2. Ingest & Point Detection | 0/TBD | Not started | - |
 | 3. Perception Layer | 0/TBD | Not started | - |
 | 4. Interpretation & Event Taxonomy | 0/TBD | Not started | - |
