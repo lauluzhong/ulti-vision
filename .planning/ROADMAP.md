@@ -19,7 +19,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 ## Phases
 
 - [x] **Phase 1: Foundation & Narrow Vertical Slice** - Swap-safe schemas, CFR transcode, observability, and a single-clip end-to-end CLI proof that every boundary works *(complete 2026-04-22)*
-- [ ] **Phase 2: Ingest & Point Detection** - Full file/URL ingest and point-boundary detection pass that gates every downstream per-point computation
+- [x] **Phase 2: Ingest & Point Detection** - Full file/URL ingest and point-boundary detection pass that gates every downstream per-point computation *(complete 2026-04-23)*
 - [ ] **Phase 3: Perception Layer** - VLM adapter with structured Observation output and per-window caching so prompt iteration is cheap
 - [ ] **Phase 4: Interpretation & Event Taxonomy** - LLM adapter with USAU-rule composition that emits the full v1 event set with schema-validated output
 - [ ] **Phase 5: Memory & Correction Loop** - Model-agnostic memory store with tag+vector retrieval, scope-gated promotion, and a correction loop ready to absorb alpha feedback
@@ -37,7 +37,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   2. An iPhone HEVC VFR fixture flows through ingest without timestamp drift — the resulting events carry timestamps within ±2 seconds of manually-verified values.
   3. Every VLM and LLM call has a persisted trace in Langfuse with `video_id`, `model`, pipeline stage, token count, and cost; the jobs table aggregates cost-per-game and it is queryable.
   4. Pydantic `Observation`, `Event`, and `MemoryRecord` models exist in code; switching the VLM backend string value changes only the adapter file, not the schema or any downstream consumer.
-**Plans**: 02-01 source intake and rights-safe normalization; 02-02 point detection and persistence; 02-03 point-aware pipeline contracts
+**Plans**: 01-01 schemas and swap-safe contracts; 01-02 infra, Postgres, Alembic, and config; 01-03 CFR ingest baseline; 01-04 adapters and observability; 01-05 CLI and narrow vertical slice pipeline
 **UI hint**: no
 
 ### Phase 2: Ingest & Point Detection
@@ -49,7 +49,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   2. For a full-game video, the system runs a dedicated point-boundary detection pass (scoreboard OCR + pull-detection heuristic + cheap VLM Q&A) that outputs a list of point boundaries before any per-point perception runs.
   3. Every event row persisted by downstream phases carries a non-null `point_id` and an in-point timestamp; SQL queries filtering `WHERE point_id = ?` return correctly scoped results.
   4. A URL ingestion path requires an explicit rights-acknowledgment flag from the caller before yt-dlp is invoked; the acknowledgment is logged.
-**Plans**: TBD
+**Plans**: 02-01 source intake and rights-safe normalization; 02-02 point detection and persistence; 02-03 point-aware pipeline contracts
 **UI hint**: no
 
 ### Phase 3: Perception Layer
@@ -119,7 +119,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Narrow Vertical Slice | 5/5 | Complete    | 2026-04-23 |
-| 2. Ingest & Point Detection | 2/3 | In progress | - |
+| 2. Ingest & Point Detection | 3/3 | Complete | 2026-04-23 |
 | 3. Perception Layer | 0/TBD | Not started | - |
 | 4. Interpretation & Event Taxonomy | 0/TBD | Not started | - |
 | 5. Memory & Correction Loop | 0/TBD | Not started | - |
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-23 — Phase 2 execution in progress; 02-01 and 02-02 complete, 02-03 next*
+*Last updated: 2026-04-23 — Phase 2 complete; Phase 3 perception planning next*

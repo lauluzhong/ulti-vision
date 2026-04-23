@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-04-23T11:05:00.000Z"
+status: ready_for_transition
+last_updated: "2026-04-23T13:30:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -22,20 +22,20 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Phase 02 Wave 3 — Point-Aware Pipeline Contracts (`02-03`)
+**Current Focus:** Transition into Phase 03 — Perception Layer
 
 ## Current Position
 
-Phase: 02 (ingest-point-detection) — EXECUTING
+Phase: 02 (ingest-point-detection) — COMPLETE
 Plan: 3 of 3
-**Next Phase:** 2 (Ingest & Point Detection)
-**Status:** Executing Phase 02
-**Progress:** Phase 2 executing, 2 of 3 plans complete
+**Next Phase:** 3 (Perception Layer)
+**Status:** Ready for Phase 03 transition
+**Progress:** Phase 2 complete, 3 of 3 plans complete
 
 ```
 Roadmap  ████████████ 100%
 Phase 1  ████████████ 100% ✓
-Phase 2  ░░░░░░░░░░░░   0%
+Phase 2  ████████████ 100% ✓
 Phase 3  ░░░░░░░░░░░░   0%
 Phase 4  ░░░░░░░░░░░░   0%
 Phase 5  ░░░░░░░░░░░░   0%
@@ -49,8 +49,8 @@ Phase 7  ░░░░░░░░░░░░   0%
 |--------|--------|---------|
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
-| Phases complete | 7 | 1 |
-| Plans complete | 5 (Phase 1) | 5/5 (Phase 1) |
+| Phases complete | 7 | 2 |
+| Plans complete | 8 (Phases 1-2) | 8/8 (Phases 1-2) |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 2 `02-03` (point-aware pipeline contracts)
+- [ ] Transition into Phase 3 and lock the perception-layer decisions
 - [ ] [ADVISORY] Before Phase 2 execution: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
-- [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the 6 DB-gated skips to PASSED
+- [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 2 is planned and ready for execution.
+None. Phase 2 is complete and the repo is ready to move into Phase 3 planning.
 
 ### Recent Decisions Log
 
@@ -91,10 +91,11 @@ None. Phase 2 is planned and ready for execution.
 - 2026-04-22: Phase 1 **COMPLETE**. All 5 REQ-IDs (INGEST-03/04/05, OBS-01/02) achieved with code + test evidence. Langfuse trace delivery live-verified by user against Cloud dashboard (5/5 checklist items). Swap-safe contracts proven via conformance test. Narrow vertical slice traverses every architectural boundary end-to-end.
 - 2026-04-23: Phase 2 `02-01` complete. Shared source-intake service ships for local files + approved public URLs, URL rights acknowledgments persist in `rights_acks`, and thin CLI/API intake surfaces are wired without breaking the existing `sva ingest` pipeline path.
 - 2026-04-23: Phase 2 `02-02` complete. First-class `points` persistence and staged OCR/pull/VLM tie-break detection landed, giving the repo stable point ids and detector outputs ready for pipeline integration.
+- 2026-04-23: Phase 2 `02-03` complete. Events now persist non-null `point_id`, `point_ordinal`, and `in_point_ts_ms`, and the pipeline groups perception/interpretation work through persisted point rows before event writes.
 
 ## Session Continuity
 
-**Resume point:** Execute `02-03` (Point-Aware Pipeline Contracts).
+**Resume point:** Transition into Phase 03 (Perception Layer) and begin discuss/plan work.
 
 **Recent artifacts:**
 
@@ -116,6 +117,7 @@ None. Phase 2 is planned and ready for execution.
 - `.planning/phases/02-ingest-point-detection/02-02-PLAN.md` — point detection and persistence
 - `.planning/phases/02-ingest-point-detection/02-02-SUMMARY.md` — completed Wave 2 point layer work
 - `.planning/phases/02-ingest-point-detection/02-03-PLAN.md` — point-aware event contract and pipeline propagation
+- `.planning/phases/02-ingest-point-detection/02-03-SUMMARY.md` — completed Wave 3 point-aware event contract and pipeline work
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
@@ -123,3 +125,4 @@ None. Phase 2 is planned and ready for execution.
 *Phase 2 planned: 2026-04-23*
 *Phase 2 plan 02-01 complete: 2026-04-23*
 *Phase 2 plan 02-02 complete: 2026-04-23*
+*Phase 2 complete: 2026-04-23*
