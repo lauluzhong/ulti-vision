@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-04-24T13:10:00.000Z"
+status: planning
+last_updated: "2026-04-24T15:05:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 18
-  completed_plans: 17
-  percent: 94
+  completed_plans: 18
+  percent: 100
 ---
 
 # Project State
@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Execute Phase 05 Wave 2 — Semantic Ranking Gap Closure (`05-04`)
+**Current Focus:** Plan Phase 06 — Async Orchestration & API
 
 ## Current Position
 
-Phase: 05 (memory-correction-loop) — EXECUTING
-Plan: 3 of 4
-**Next Phase:** 5 (Memory & Correction Loop)
-**Status:** Phase 5 executing
-**Progress:** Phase 5 executing, 3 of 4 plans complete
+Phase: 06 (async-orchestration-and-api) — DISCUSS/PLAN
+Plan: not started
+**Next Phase:** 6 (Async Orchestration & API)
+**Status:** Phase 5 complete; Phase 6 ready for discuss/plan
+**Progress:** Phases 1-5 complete; next step is Phase 6 planning
 
 ```
 Roadmap  ████████████ 100%
@@ -38,7 +38,7 @@ Phase 1  ████████████ 100% ✓
 Phase 2  ████████████ 100% ✓
 Phase 3  ████████████ 100% ✓
 Phase 4  ████████████ 100% ✓
-Phase 5  █████████░░░  75%
+Phase 5  ████████████ 100% ✓
 Phase 6  ░░░░░░░░░░░░   0%
 Phase 7  ░░░░░░░░░░░░   0%
 ```
@@ -49,8 +49,8 @@ Phase 7  ░░░░░░░░░░░░   0%
 |--------|--------|---------|
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
-| Phases complete | 7 | 4 |
-| Plans complete | 18 (Phases 1-5) | 17/18 |
+| Phases complete | 7 | 5 |
+| Plans complete | 18 (Phases 1-5) | 18/18 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 5 `05-04` (semantic-ranking gap closure for `MEMORY-02`)
+- [ ] Plan Phase 6 (async orchestration, job resumability, and HTTP API surface)
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 5 is in execution and `05-04` is unblocked.
+None. Phase 6 planning is unblocked.
 
 ### Recent Decisions Log
 
@@ -106,10 +106,11 @@ None. Phase 5 is in execution and `05-04` is unblocked.
 - 2026-04-24: Phase 5 `05-02` complete. Retrieval is now scope-aware and tag-first behind the fixed async seam, and interpreted event rows inherit retrieved memory ids for auditability.
 - 2026-04-24: Phase 5 `05-03` complete. Corrections now derive coach-scoped memory rows and global promotion is hard-blocked unless distinct-coach corroboration plus builder curation are both present.
 - 2026-04-24: Phase 5 gap identified. `MEMORY-02` still needs real semantic ranking, so explicit gap plan `05-04` was added instead of falsely marking the phase complete.
+- 2026-04-24: Phase 5 `05-04` complete. Retrieval now ranks candidate memories semantically through a model-agnostic embedding seam, persisted embedding state lives in Postgres, and Phase 5 is now honestly complete.
 
 ## Session Continuity
 
-**Resume point:** Execute `05-04` (Semantic Ranking Gap Closure).
+**Resume point:** Start Phase 6 discuss/plan.
 
 **Recent artifacts:**
 
@@ -160,6 +161,7 @@ None. Phase 5 is in execution and `05-04` is unblocked.
 - `.planning/phases/05-memory-correction-loop/05-03-PLAN.md` — correction writer and promotion gate
 - `.planning/phases/05-memory-correction-loop/05-03-SUMMARY.md` — completed Wave 2 correction writer and contamination-control gate
 - `.planning/phases/05-memory-correction-loop/05-04-PLAN.md` — semantic-ranking gap closure for `MEMORY-02`
+- `.planning/phases/05-memory-correction-loop/05-04-SUMMARY.md` — completed semantic-ranking closure and persisted embedding substrate
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
@@ -182,3 +184,4 @@ None. Phase 5 is in execution and `05-04` is unblocked.
 *Phase 5 plan 05-01 complete: 2026-04-24*
 *Phase 5 plan 05-02 complete: 2026-04-24*
 *Phase 5 plan 05-03 complete: 2026-04-24*
+*Phase 5 complete: 2026-04-24*
