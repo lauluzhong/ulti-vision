@@ -22,7 +22,7 @@ def _call_claude(
     ctx: TraceContext,
     observations: list[Observation],
     retrieved: list[MemoryRecord],
-) -> tuple[Event, Decimal, int, int, TraceContext]:
+) -> tuple[list[Event], Decimal, int, int, TraceContext]:
     """Phase 1 stub: minimal Event emission, observability path exercised."""
     input_tokens = 500 + 100 * len(observations) + 80 * len(retrieved)
     output_tokens = 100
@@ -37,6 +37,7 @@ def _call_claude(
         in_point_ts_ms=observations[0].observation_ts_ms if observations else 0,
         type="unknown",
         team="unknown",
+        prompt_version_hash=ctx.prompt_version_hash,
         details={"stub": True, "observations_in": len(observations), "memory_in": len(retrieved)},
         source_observations=[o.observation_id for o in observations],
         memory_refs=[m.memory_id for m in retrieved],
@@ -45,7 +46,7 @@ def _call_claude(
         warnings=["phase1 stub — real interpretation lands in Phase 4"],
         model=ModelMetadata(provider="anthropic", model_id=_MODEL_ID, version=_VERSION),
     )
-    return (event, cost, input_tokens, output_tokens, ctx)
+    return ([event], cost, input_tokens, output_tokens, ctx)
 
 
 class ClaudeInterpreter:
@@ -59,7 +60,7 @@ class ClaudeInterpreter:
         ctx: TraceContext,
         observations: list[Observation],
         retrieved: list[MemoryRecord],
-    ) -> Event:
+    ) -> list[Event]:
         enriched = TraceContext(
             stage="interpret",
             model=_MODEL_ID,
@@ -70,6 +71,5 @@ class ClaudeInterpreter:
             point_ordinal=ctx.point_ordinal,
         )
         return _call_claude(enriched, observations, retrieved)
-
 
 __all__ = ["ClaudeInterpreter"]

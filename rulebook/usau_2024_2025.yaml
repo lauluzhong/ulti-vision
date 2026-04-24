@@ -1,0 +1,36 @@
+{
+  "ruleset_id": "usau_2024_2025",
+  "ruleset_name": "USA Ultimate Official Rules of Ultimate 2024-2025",
+  "rules": [
+    {
+      "ref": "USAU-8.3",
+      "category": "goal",
+      "summary": "A goal is scored when an in-bounds player catches any legal pass in the end zone the player is attacking.",
+      "hard": true
+    },
+    {
+      "ref": "USAU-13",
+      "category": "turnover",
+      "summary": "A turnover transfers possession when the offense does not complete a legal pass and the defense gains or is awarded possession.",
+      "hard": true
+    },
+    {
+      "ref": "USAU-3",
+      "category": "possession",
+      "summary": "Possession is established and retained by the team in control of the disc until a turnover or goal changes state.",
+      "hard": true
+    },
+    {
+      "ref": "USAU-XIV",
+      "category": "point_end",
+      "summary": "The point ends after a goal is scored and play resets for the next pull.",
+      "hard": true
+    },
+    {
+      "ref": "USAU-BEST-EFFORT",
+      "category": "classification",
+      "summary": "Throw type, pass direction, and turnover subtype are best-effort and should degrade to unknown when evidence is insufficient.",
+      "hard": false
+    }
+  ]
+}

@@ -32,6 +32,9 @@ Lighting = Literal["ok", "harsh", "dim"]
 PossessorRole = Literal["thrower", "receiver", "defender", "none"]
 MemoryKind = Literal["few_shot_positive", "few_shot_negative", "rule", "correction"]
 DiscVisibilityQuality = Literal["clear", "blurry", "likely_present_not_visible", "absent"]
+TurnoverSubtype = Literal["throwaway", "drop", "block", "out_of_bounds", "unknown"]
+ThrowType = Literal["forehand", "backhand", "hammer", "blade", "unknown"]
+PassDirection = Literal["up-field", "down-field", "lateral", "unknown"]
 
 
 class ModelMetadata(BaseModel):
@@ -116,6 +119,10 @@ class Event(BaseModel):
     type: EventType
     team: Team = "unknown"
     player_id: None = None                    # v1 contract — always None (PROJECT.md key decision)
+    turnover_subtype: TurnoverSubtype | None = None
+    throw_type: ThrowType | None = None
+    pass_direction: PassDirection | None = None
+    prompt_version_hash: str | None = None
     details: dict[str, Any] = Field(default_factory=dict)
     source_observations: list[str] = Field(default_factory=list)
     rule_refs: list[str] = Field(default_factory=list)
@@ -168,4 +175,7 @@ __all__ = [
     "EventType",
     "Team",
     "DiscVisibilityQuality",
+    "TurnoverSubtype",
+    "ThrowType",
+    "PassDirection",
 ]

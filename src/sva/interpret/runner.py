@@ -1,4 +1,4 @@
-"""Interpret runner — takes any Interpreter, produces an Event."""
+"""Interpret runner — takes any Interpreter, produces canonical Event rows."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ def run_point(
     observations: list[Observation],
     interpreter: Interpreter | None = None,
     retrieved: list[MemoryRecord] | None = None,
-) -> Event:
+) -> list[Event]:
     i = interpreter or make_default_interpreter()
     return i.interpret(ctx, observations, retrieved or [])
 

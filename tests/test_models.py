@@ -79,6 +79,35 @@ def test_event_player_id_is_always_none():
         )
 
 
+def test_event_explicit_audit_fields_and_best_effort_details_round_trip():
+    e = Event(
+        event_id="e3",
+        game_id="g1",
+        point_id="g1:pt_001",
+        point_ordinal=1,
+        video_ts_ms=2500,
+        in_point_ts_ms=400,
+        type="turnover",
+        team="light",
+        turnover_subtype="block",
+        throw_type="backhand",
+        pass_direction="lateral",
+        prompt_version_hash="abc123def456",
+        source_observations=["obs_1", "obs_2"],
+        rule_refs=["USAU-12", "USAU-13"],
+        memory_refs=["mem_1"],
+        warnings=["best-effort"],
+        model=ModelMetadata(provider="anthropic", model_id="claude-sonnet-4-5", version="v1"),
+    )
+    payload = e.model_dump_json()
+    rehydrated = Event.model_validate_json(payload)
+    assert rehydrated.turnover_subtype == "block"
+    assert rehydrated.throw_type == "backhand"
+    assert rehydrated.pass_direction == "lateral"
+    assert rehydrated.prompt_version_hash == "abc123def456"
+    assert rehydrated.rule_refs == ["USAU-12", "USAU-13"]
+
+
 def test_memory_record_defaults_are_safe():
     mr = MemoryRecord(
         memory_id="mem_01",

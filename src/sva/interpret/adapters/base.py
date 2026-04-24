@@ -16,7 +16,7 @@ class Interpreter(Protocol):
         ctx: TraceContext,
         observations: list[Observation],
         retrieved: list[MemoryRecord],
-    ) -> Event: ...
+    ) -> list[Event]: ...
 
 
 __all__ = ["Interpreter"]

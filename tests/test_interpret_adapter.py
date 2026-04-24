@@ -1,4 +1,4 @@
-"""Phase 1 tests: ClaudeInterpreter stub emits a valid Event + exercises observability."""
+"""Interpret adapter tests for the current Claude seam."""
 
 from __future__ import annotations
 
@@ -60,7 +60,9 @@ def test_claude_interpreter_emits_valid_event():
         point_ordinal=1,
     )
     obs_list = [_dummy_obs(window_id="win_1"), _dummy_obs(window_id="win_2")]
-    event = ClaudeInterpreter().interpret(ctx, obs_list, retrieved=[])
+    events = ClaudeInterpreter().interpret(ctx, obs_list, retrieved=[])
+    assert len(events) == 1
+    event = events[0]
 
     assert event.schema_version == "1.0"
     assert event.model.provider == "anthropic"
@@ -70,6 +72,7 @@ def test_claude_interpreter_emits_valid_event():
     assert event.in_point_ts_ms == 1000
     assert event.type == "unknown"
     assert len(event.source_observations) == 2
+    assert event.prompt_version_hash is None
 
     # OBS-01: cost was recorded
     with get_engine().connect() as conn:
@@ -91,21 +94,25 @@ def test_run_point_accepts_custom_interpreter():
 
     class DummyInterpreter:
         def interpret(self, ctx, observations, retrieved):
-            return Event(
-                event_id="evt_dummy",
-                game_id=ctx.game_id,
-                point_id=ctx.point_id or f"{ctx.game_id}:pt_001",
-                point_ordinal=ctx.point_ordinal or 1,
-                video_ts_ms=0,
-                in_point_ts_ms=0,
-                type="unknown",
-                team="unknown",
-                model=ModelMetadata(provider="dummy", model_id="dummy-llm", version="test"),
-            )
+            return [
+                Event(
+                    event_id="evt_dummy",
+                    game_id=ctx.game_id,
+                    point_id=ctx.point_id or f"{ctx.game_id}:pt_001",
+                    point_ordinal=ctx.point_ordinal or 1,
+                    video_ts_ms=0,
+                    in_point_ts_ms=0,
+                    type="unknown",
+                    team="unknown",
+                    model=ModelMetadata(provider="dummy", model_id="dummy-llm", version="test"),
+                )
+            ]
 
     d: Interpreter = DummyInterpreter()
     ctx = TraceContext(stage="interpret", model="dummy-llm", video_id="v", game_id="g", point_id="g:pt_001", point_ordinal=1)
-    event = run_point(ctx, observations=[], interpreter=d)
+    events = run_point(ctx, observations=[], interpreter=d)
+    assert len(events) == 1
+    event = events[0]
     assert event.model.provider == "dummy"
     assert event.point_id == "g:pt_001"
     assert event.type == "unknown"
