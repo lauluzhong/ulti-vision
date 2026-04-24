@@ -1,51 +1,50 @@
-"""Tests for the thin synchronous Phase 2 ingest API surface."""
+"""Tests for the async Phase 6 ingest submission API surface."""
 
 from __future__ import annotations
 
+import importlib
+
 import pytest
 
-from sva.ingest.ingest import IngestResult
-from sva.ingest.probe import VideoMetadata
+from sva.jobs_dao import JobRecord
 
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
 
-def _fake_result(source_kind: str, source_url: str | None = None) -> IngestResult:
-    meta = VideoMetadata(
-        path="tests/fixtures/cfr_baseline.mp4",
-        duration_s=10.0,
-        codec="h264",
-        fps_reported=1.0,
-        fps_average=1.0,
-        container="mp4",
-        width=320,
-        height=240,
-        is_variable_fps=False,
-    )
-    return IngestResult(
-        video_id="vid_test",
+def _fake_job(source_kind: str, source_url: str | None = None) -> JobRecord:
+    from datetime import datetime, timezone
+    from decimal import Decimal
+
+    return JobRecord(
         game_id="game_test",
+        video_id=None,
+        status="queued",
+        stage="queued",
+        progress={"target_fps": 1},
+        error_message=None,
+        cost_usd=Decimal("0"),
         source_path="tests/fixtures/cfr_baseline.mp4",
-        transcoded_path="data/transcoded/vid_test.mp4",
-        duration_s=10.0,
-        status="ingested",
-        windows=[(0, 1000)],
-        source_metadata=meta,
-        transcoded_metadata=meta,
         source_kind=source_kind,
         source_url=source_url,
+        duration_s=None,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
 
 
 def test_ingest_api_accepts_file_upload(monkeypatch):
     from sva.api.app import create_app
 
-    def _fake_ingest(source, game_id=None, target_fps=1):
-        assert source.__class__.__name__ == "LocalFileSource"
-        return _fake_result("local_file")
+    api_module = importlib.import_module("sva.api.app")
+    enqueued: list[str] = []
 
-    monkeypatch.setattr("sva.api.app.ingest_source", _fake_ingest)
+    def _fake_submit(path, game_id=None, target_fps=1):
+        assert target_fps == 1
+        return _fake_job("local_file")
+
+    monkeypatch.setattr(api_module, "submit_local_job", _fake_submit)
+    monkeypatch.setattr(api_module, "enqueue_job", lambda job_id: enqueued.append(job_id))
 
     client = TestClient(create_app())
     response = client.post(
@@ -54,19 +53,25 @@ def test_ingest_api_accepts_file_upload(monkeypatch):
         data={"fps": "1"},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
+    assert response.json()["job_id"] == "game_test"
     assert response.json()["source_kind"] == "local_file"
+    assert enqueued == ["game_test"]
 
 
 def test_ingest_api_accepts_approved_url(monkeypatch):
     from sva.api.app import create_app
 
-    def _fake_ingest(source, game_id=None, target_fps=1):
-        assert source.__class__.__name__ == "RemoteUrlSource"
-        assert source.ack_rights is True
-        return _fake_result("public_url", source_url=source.url)
+    api_module = importlib.import_module("sva.api.app")
+    enqueued: list[str] = []
 
-    monkeypatch.setattr("sva.api.app.ingest_source", _fake_ingest)
+    def _fake_submit(url, caller_id, ack_rights, game_id=None, target_fps=1):
+        assert ack_rights is True
+        assert caller_id == "api-test"
+        return _fake_job("public_url", source_url=url)
+
+    monkeypatch.setattr(api_module, "submit_remote_job", _fake_submit)
+    monkeypatch.setattr(api_module, "enqueue_job", lambda job_id: enqueued.append(job_id))
 
     client = TestClient(create_app())
     response = client.post(
@@ -78,9 +83,10 @@ def test_ingest_api_accepts_approved_url(monkeypatch):
         },
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 202
     assert response.json()["source_kind"] == "public_url"
-    assert response.json()["source_url"] == "https://www.youtube.com/watch?v=abc123"
+    assert response.json()["job_id"] == "game_test"
+    assert enqueued == ["game_test"]
 
 
 def test_ingest_api_rejects_url_without_rights_ack():

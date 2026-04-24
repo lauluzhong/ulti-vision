@@ -20,6 +20,7 @@ class Settings(BaseSettings):
         default="https://cloud.langfuse.com", alias="LANGFUSE_HOST"
     )
     database_url: str = Field(..., alias="DATABASE_URL")
+    redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
 
     model_config = SettingsConfigDict(
         env_file=".env",
