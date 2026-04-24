@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from sva.models import (
+    CorrectionRecord,
     SCHEMA_VERSION,
     Event,
     MemoryRecord,
@@ -117,6 +118,27 @@ def test_memory_record_defaults_are_safe():
     assert mr.scope == "global"
     assert mr.confidence == 0.0
     assert mr.corroborations == 0
+
+
+def test_correction_record_round_trips_json():
+    record = CorrectionRecord(
+        correction_id="corr_01",
+        game_id="g1",
+        point_id="g1:pt_001",
+        point_ordinal=1,
+        source_event_id="evt_01",
+        coach_id="coach_1",
+        correction_type="reclassify",
+        original_event={"type": "turnover"},
+        proposed_event={"type": "completion"},
+        source_memory_refs=["mem_01"],
+        created_at=datetime.now(timezone.utc),
+    )
+    payload = record.model_dump_json()
+    rehydrated = CorrectionRecord.model_validate_json(payload)
+    assert rehydrated.correction_type == "reclassify"
+    assert rehydrated.source_memory_refs == ["mem_01"]
+    assert rehydrated.original_event["type"] == "turnover"
 
 
 def test_no_vendor_field_leakage():

@@ -31,6 +31,7 @@ Camera = Literal["sideline", "endzone", "elevated", "handheld", "unknown"]
 Lighting = Literal["ok", "harsh", "dim"]
 PossessorRole = Literal["thrower", "receiver", "defender", "none"]
 MemoryKind = Literal["few_shot_positive", "few_shot_negative", "rule", "correction"]
+CorrectionType = Literal["flag_wrong", "reclassify", "mark_missed", "delete_spurious"]
 DiscVisibilityQuality = Literal["clear", "blurry", "likely_present_not_visible", "absent"]
 TurnoverSubtype = Literal["throwaway", "drop", "block", "out_of_bounds", "unknown"]
 ThrowType = Literal["forehand", "backhand", "hammer", "blade", "unknown"]
@@ -160,11 +161,31 @@ class MemoryRecord(BaseModel):
     last_used_at: datetime | None = None
 
 
+class CorrectionRecord(BaseModel):
+    """Immutable coach correction row used to derive memory safely."""
+
+    model_config = ConfigDict(extra="forbid")
+    schema_version: Literal["1.0"] = SCHEMA_VERSION
+    correction_id: str
+    game_id: str
+    point_id: str
+    point_ordinal: int = Field(ge=1)
+    source_event_id: str | None = None
+    coach_id: str
+    correction_type: CorrectionType
+    original_event: dict[str, Any] = Field(default_factory=dict)
+    proposed_event: dict[str, Any] = Field(default_factory=dict)
+    source_memory_refs: list[str] = Field(default_factory=list)
+    note: str = ""
+    created_at: datetime
+
+
 __all__ = [
     "SCHEMA_VERSION",
     "Observation",
     "Event",
     "MemoryRecord",
+    "CorrectionRecord",
     "ModelMetadata",
     "SceneObservation",
     "DiscObservation",
@@ -174,6 +195,7 @@ __all__ = [
     "MemorySource",
     "EventType",
     "Team",
+    "CorrectionType",
     "DiscVisibilityQuality",
     "TurnoverSubtype",
     "ThrowType",

@@ -100,6 +100,21 @@ def test_phase4_event_audit_columns_exist_when_migrated(migrated_db):
         assert column in rows
 
 
+def test_phase5_memory_and_corrections_tables_exist_when_migrated(migrated_db):
+    from sva.db import get_engine
+
+    eng = get_engine()
+    with eng.connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' ORDER BY table_name"
+            )
+        ).scalars().all()
+    assert "memory_records" in rows
+    assert "corrections" in rows
+
+
 def test_cost_aggregation_query_works(migrated_db):
     from sva.db import get_engine
 
