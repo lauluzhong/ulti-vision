@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-04-23T17:10:00.000Z"
+status: executing
+last_updated: "2026-04-24T07:20:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 11
+  total_plans: 14
   completed_plans: 11
-  percent: 100
+  percent: 79
 ---
 
 # Project State
 
-**Last updated:** 2026-04-23
+**Last updated:** 2026-04-24
 
 ## Project Reference
 
@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Start Phase 04 discuss/plan — Interpretation & Event Taxonomy
+**Current Focus:** Execute Phase 04 Wave 1 — Event Contract & Rules Backbone (`04-01`)
 
 ## Current Position
 
-Phase: 04 (interpretation-event-taxonomy) — PLANNING
-Plan: 0 of TBD
+Phase: 04 (interpretation-event-taxonomy) — EXECUTING
+Plan: 0 of 3
 **Next Phase:** 4 (Interpretation & Event Taxonomy)
-**Status:** Phase 3 complete; ready to discuss and plan Phase 04
-**Progress:** Phase 3 complete; Phase 4 not yet planned
+**Status:** Phase 4 planned; ready to execute 04-01
+**Progress:** Phase 4 planned, 0 of 3 plans complete
 
 ```
 Roadmap  ████████████ 100%
@@ -50,7 +50,7 @@ Phase 7  ░░░░░░░░░░░░   0%
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
 | Phases complete | 7 | 3 |
-| Plans complete | 11 (Phases 1-3) | 11/11 |
+| Plans complete | 14 (Phases 1-4) | 11/14 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Start Phase 4 discuss/plan (`INTERPRET-*`, `EVENT-*` requirements)
+- [ ] Execute Phase 4 `04-01` (event contract, USAU rules data, validator backbone)
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 3 is complete and Phase 4 planning is unblocked.
+None. Phase 4 is planned and 04-01 is unblocked.
 
 ### Recent Decisions Log
 
@@ -96,10 +96,11 @@ None. Phase 3 is complete and Phase 4 planning is unblocked.
 - 2026-04-23: Phase 3 `03-01` complete. The repo now has refined Observation ambiguity fields, an `observations` table, and exact-triple cache-key DAO helpers keyed on `(video_id, window_id, prompt_version_hash)`.
 - 2026-04-23: Phase 3 `03-02` complete. GeminiPerceiver now uses the real Gemini 2.5 Flash native-video path, emits stable prompt hashes, and records latency/retry/terminal-status observability on both success and failure paths.
 - 2026-04-23: Phase 3 `03-03` complete. Sampling now honors the 1-3 fps envelope, `run_window(...)` is cache-first and observable on cache hits, and the point-aware pipeline persists observations before interpretation while reusing cached observations on reruns.
+- 2026-04-24: Phase 4 planned. Context, research, pattern mapping, and three executable plans now define the interpretation path: widen to Event[], introduce USAU rules-as-data + deterministic validation, then land the real Claude adapter and pipeline fan-out.
 
 ## Session Continuity
 
-**Resume point:** Start Phase 04 discuss/plan (Interpretation & Event Taxonomy).
+**Resume point:** Execute `04-01` (Event Contract & Rules Backbone).
 
 **Recent artifacts:**
 
@@ -131,6 +132,12 @@ None. Phase 3 is complete and Phase 4 planning is unblocked.
 - `.planning/phases/03-perception-layer/03-02-SUMMARY.md` — completed Wave 1 real Gemini adapter and perception observability work
 - `.planning/phases/03-perception-layer/03-03-PLAN.md` — pipeline cache integration and verification
 - `.planning/phases/03-perception-layer/03-03-SUMMARY.md` — completed Wave 2 cache-first runner and point-aware pipeline reuse work
+- `.planning/phases/04-interpretation-event-taxonomy/04-CONTEXT.md` — locked Phase 4 implementation decisions
+- `.planning/phases/04-interpretation-event-taxonomy/04-RESEARCH.md` — Phase 4 interpretation planning memo
+- `.planning/phases/04-interpretation-event-taxonomy/04-PATTERNS.md` — file-level analogs for interpreter widening, rules data, and pipeline fan-out
+- `.planning/phases/04-interpretation-event-taxonomy/04-01-PLAN.md` — event contract, rules data, and deterministic validator backbone
+- `.planning/phases/04-interpretation-event-taxonomy/04-02-PLAN.md` — Claude adapter, prompt composition, and interpret observability
+- `.planning/phases/04-interpretation-event-taxonomy/04-03-PLAN.md` — point-aware pipeline fan-out and event persistence verification
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
@@ -144,3 +151,4 @@ None. Phase 3 is complete and Phase 4 planning is unblocked.
 *Phase 3 plan 03-02 complete: 2026-04-23*
 *Phase 3 plan 03-03 complete: 2026-04-23*
 *Phase 3 complete: 2026-04-23*
+*Phase 4 planned: 2026-04-24*

@@ -74,7 +74,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   3. Pass direction and throw type are emitted as best-effort with `"unknown"` as a first-class value; no event emits a confident direction when `scene.field_visible != "full"` — verified by a fixture clip with a zoomed-in camera.
   4. LLM output that fails the `Event` schema is logged and flagged via a dedicated validation error path; no schema-violating event silently reaches the events table.
   5. The WFDF rulebook is composed into the interpret prompt at call time from a single source file; swapping rule files at the next rulebook update is a data change, not a code change.
-**Plans**: TBD
+**Plans**: 04-01 event contract + rules data + validator backbone; 04-02 Claude adapter + prompt composition + observability; 04-03 pipeline fan-out + event persistence verification
 **UI hint**: no
 
 ### Phase 5: Memory & Correction Loop
@@ -120,8 +120,8 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 |-------|----------------|--------|-----------|
 | 1. Foundation & Narrow Vertical Slice | 5/5 | Complete    | 2026-04-23 |
 | 2. Ingest & Point Detection | 3/3 | Complete | 2026-04-23 |
-| 3. Perception Layer | 1/3 | In progress | - |
-| 4. Interpretation & Event Taxonomy | 0/TBD | Not started | - |
+| 3. Perception Layer | 3/3 | Complete | 2026-04-23 |
+| 4. Interpretation & Event Taxonomy | 0/3 | Planned | - |
 | 5. Memory & Correction Loop | 0/TBD | Not started | - |
 | 6. Async Orchestration & API | 0/TBD | Not started | - |
 | 7. Evaluation Harness & Alpha UI | 0/TBD | Not started | - |
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-23 — Phase 3 complete; Phase 4 planning next*
+*Last updated: 2026-04-24 — Phase 4 planned; 04-01 execution next*
