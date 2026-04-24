@@ -123,7 +123,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | 3. Perception Layer | 3/3 | Complete | 2026-04-23 |
 | 4. Interpretation & Event Taxonomy | 3/3 | Complete | 2026-04-24 |
 | 5. Memory & Correction Loop | 4/4 | Complete | 2026-04-24 |
-| 6. Async Orchestration & API | 2/4 | In progress | - |
+| 6. Async Orchestration & API | 3/4 | In progress | - |
 | 7. Evaluation Harness & Alpha UI | 0/TBD | Not started | - |
 
 ## Coverage Summary
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-25 — Phase 6 06-02 complete; 06-03 canonical events and corrections next*
+*Last updated: 2026-04-25 — Phase 6 06-03 complete; 06-04 export and resume verification next*

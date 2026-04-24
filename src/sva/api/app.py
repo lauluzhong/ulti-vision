@@ -7,9 +7,18 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from sva.api.contracts import JobStatusResponse, JobSubmissionResponse
+from sva.api.contracts import (
+    CorrectionCreateRequest,
+    CorrectionResponse,
+    EventResponse,
+    GameEventsResponse,
+    JobStatusResponse,
+    JobSubmissionResponse,
+)
+from sva.events_dao import list_event_rows
 from sva.jobs_dao import get_job
 from sva.jobs_service import submit_local_job, submit_remote_job
+from sva.memory.service import CorrectionSubmission, submit_correction
 from sva.queue import enqueue_job
 
 try:
@@ -28,6 +37,29 @@ def _save_upload(upload: Any) -> Path:
     with dst.open("wb") as handle:
         shutil.copyfileobj(upload.file, handle)
     return dst
+
+
+def _serialize_event_row(row: Any) -> EventResponse:
+    confidence = None if row.confidence is None else float(row.confidence)
+    return EventResponse(
+        event_id=row.event_id,
+        game_id=row.game_id,
+        point_id=row.point_id,
+        point_ordinal=int(row.point_ordinal),
+        video_ts_ms=int(row.video_ts_ms),
+        in_point_ts_ms=int(row.in_point_ts_ms),
+        type=row.type,
+        team=row.team,
+        turnover_subtype=row.turnover_subtype,
+        throw_type=row.throw_type,
+        pass_direction=row.pass_direction,
+        details=dict(row.details or {}),
+        schema_version=row.schema_version,
+        rule_refs=list(row.rule_refs or []),
+        memory_refs=list(row.memory_refs or []),
+        confidence=confidence,
+        warnings=list(row.warnings or []),
+    )
 
 
 def create_app() -> Any:
@@ -95,6 +127,64 @@ def create_app() -> Any:
             stage=job.stage,
             progress=job.progress,
             error_message=job.error_message,
+        ).model_dump()
+
+    @app.get("/games/{game_id}/events")
+    async def game_events_endpoint(
+        game_id: str,
+        point_id: str | None = None,
+        event_type: str | None = None,
+        team: str | None = None,
+    ) -> dict[str, Any]:
+        job = get_job(game_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Unknown game: {game_id}")
+        rows = list_event_rows(
+            game_id,
+            point_id=point_id,
+            event_type=event_type,
+            team=team,
+        )
+        return GameEventsResponse(
+            game_id=game_id,
+            events=[_serialize_event_row(row) for row in rows],
+        ).model_dump()
+
+    @app.post("/games/{game_id}/corrections", status_code=201)
+    async def corrections_endpoint(
+        game_id: str,
+        payload: CorrectionCreateRequest,
+    ) -> dict[str, Any]:
+        job = get_job(game_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Unknown game: {game_id}")
+        try:
+            result = submit_correction(
+                game_id,
+                CorrectionSubmission(
+                    point_id=payload.point_id,
+                    point_ordinal=payload.point_ordinal,
+                    source_event_id=payload.source_event_id,
+                    coach_id=payload.coach_id,
+                    correction_type=payload.correction_type,
+                    original_event=payload.original_event,
+                    proposed_event=payload.proposed_event,
+                    source_memory_refs=payload.source_memory_refs,
+                    note=payload.note,
+                ),
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return CorrectionResponse(
+            correction_id=result.correction_id,
+            game_id=result.game_id,
+            point_id=result.point_id,
+            point_ordinal=result.point_ordinal,
+            coach_id=result.coach_id,
+            correction_type=result.correction_type,
+            created_memory_ids=result.created_memory_ids,
         ).model_dump()
 
     return app

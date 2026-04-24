@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-04-25T11:30:00.000Z"
+last_updated: "2026-04-25T13:10:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 22
-  completed_plans: 20
-  percent: 91
+  completed_plans: 21
+  percent: 95
 ---
 
 # Project State
@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Execute Phase 06 Wave 3 — Canonical Events API and Corrections Submission (`06-03`)
+**Current Focus:** Execute Phase 06 Wave 4 — CSV Export and Crash-Resume Verification (`06-04`)
 
 ## Current Position
 
 Phase: 06 (async-orchestration-and-api) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 **Next Phase:** 6 (Async Orchestration & API)
 **Status:** Phase 6 planned
-**Progress:** Phase 6 executing, 2 of 4 plans complete
+**Progress:** Phase 6 executing, 3 of 4 plans complete
 
 ```
 Roadmap  ████████████ 100%
@@ -39,7 +39,7 @@ Phase 2  ████████████ 100% ✓
 Phase 3  ████████████ 100% ✓
 Phase 4  ████████████ 100% ✓
 Phase 5  ████████████ 100% ✓
-Phase 6  ██████░░░░░░  50%
+Phase 6  █████████░░░  75%
 Phase 7  ░░░░░░░░░░░░   0%
 ```
 
@@ -50,7 +50,7 @@ Phase 7  ░░░░░░░░░░░░   0%
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
 | Phases complete | 7 | 5 |
-| Plans complete | 22 (Phases 1-6) | 20/22 |
+| Plans complete | 22 (Phases 1-6) | 21/22 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 6 `06-03` (canonical events API and corrections submission)
+- [ ] Execute Phase 6 `06-04` (CSV export and crash-resume verification)
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 6 `06-02` is complete and `06-03` is unblocked.
+None. Phase 6 `06-03` is complete and `06-04` is unblocked.
 
 ### Recent Decisions Log
 
@@ -110,10 +110,11 @@ None. Phase 6 `06-02` is complete and `06-03` is unblocked.
 - 2026-04-24: Phase 6 planned. Context, research, pattern mapping, and four executable plans now define the async-orchestration path: durable job/progress truth first, async submission/status plus thin queue wiring second, canonical events/corrections API third, and export plus crash/resume verification fourth.
 - 2026-04-25: Phase 6 `06-01` complete. Queued jobs are now first-class persisted rows, `jobs` carries stage/progress truth, ingest can rebuild persisted job state for resume flows, and the repo has a resume-safe orchestration service ready for queue/API integration.
 - 2026-04-25: Phase 6 `06-02` complete. `POST /ingest` now returns durable queued job metadata with `202 Accepted`, `GET /jobs/{job_id}` polls canonical persisted stage/progress truth, and Dramatiq/Redis are wired as thin transport details instead of request-cycle execution.
+- 2026-04-25: Phase 6 `06-03` complete. `GET /games/{game_id}/events` now serves canonical filterable timelines from stored rows, and `POST /games/{game_id}/corrections` persists immutable coach corrections that derive coach-scoped memory rows through the existing Phase 5 substrate.
 
 ## Session Continuity
 
-**Resume point:** Execute `06-03` (Canonical Events API and Corrections Submission).
+**Resume point:** Execute `06-04` (CSV Export and Crash-Resume Verification).
 
 **Recent artifacts:**
 
@@ -173,6 +174,7 @@ None. Phase 6 `06-02` is complete and `06-03` is unblocked.
 - `.planning/phases/06-async-orchestration-and-api/06-02-PLAN.md` — async submission/status API and thin queue wiring
 - `.planning/phases/06-async-orchestration-and-api/06-02-SUMMARY.md` — completed async submission/status API and thin queue wiring
 - `.planning/phases/06-async-orchestration-and-api/06-03-PLAN.md` — canonical events API and corrections submission
+- `.planning/phases/06-async-orchestration-and-api/06-03-SUMMARY.md` — completed canonical events API and corrections submission
 - `.planning/phases/06-async-orchestration-and-api/06-04-PLAN.md` — CSV export and crash/resume verification
 
 ---
@@ -200,3 +202,4 @@ None. Phase 6 `06-02` is complete and `06-03` is unblocked.
 *Phase 6 planned: 2026-04-24*
 *Phase 6 plan 06-01 complete: 2026-04-25*
 *Phase 6 plan 06-02 complete: 2026-04-25*
+*Phase 6 plan 06-03 complete: 2026-04-25*
