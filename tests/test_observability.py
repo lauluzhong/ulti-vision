@@ -254,3 +254,45 @@ def test_cache_hit_rerun_emits_prompt_hash_observability_without_perceiver_call(
     assert traces[0].metadata["prompt_version_hash"] == "cachehash001"
     assert traces[0].output["terminal_status"] == "cache_hit"
     assert traces[0].output["cache_hit"] is True
+
+
+def test_interpret_observe_call_preserves_prompt_hash_on_success(monkeypatch):
+    from sva.observability.langfuse import TraceContext, observe_call
+
+    updates: list[dict] = []
+
+    class FakeTrace:
+        def update(self, *, output):
+            updates.append(output)
+
+        def score(self, *, name, value):
+            pass
+
+    class FakeLangfuse:
+        def trace(self, **kwargs):
+            return FakeTrace()
+
+    monkeypatch.setattr("sva.observability.langfuse.get_langfuse", lambda: FakeLangfuse())
+    monkeypatch.setattr("sva.observability.cost.record_job_cost", lambda game_id, delta_usd: None)
+
+    @observe_call(stage="interpret", model="dummy-llm")
+    def fake_interpret(ctx):
+        updated = TraceContext(
+            stage=ctx.stage,
+            model=ctx.model,
+            video_id=ctx.video_id,
+            game_id=ctx.game_id,
+            point_id=ctx.point_id,
+            point_ordinal=ctx.point_ordinal,
+            prompt_version_hash="feedfacecafe",
+            latency_ms=10,
+            retry_count=0,
+            terminal_status="success",
+        )
+        return ([{"event": "ok"}], Decimal("0.0002"), 10, 20, updated)
+
+    ctx = TraceContext(stage="interpret", model="dummy-llm", video_id="vid_x", game_id="game_x")
+    result = fake_interpret(ctx)
+    assert result == [{"event": "ok"}]
+    assert updates[0]["prompt_version_hash"] == "feedfacecafe"
+    assert updates[0]["terminal_status"] == "success"
