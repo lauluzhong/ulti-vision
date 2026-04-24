@@ -16,16 +16,17 @@ from sva.api.contracts import (
     JobSubmissionResponse,
 )
 from sva.events_dao import list_event_rows
+from sva.exports import render_events_csv
 from sva.jobs_dao import get_job
 from sva.jobs_service import submit_local_job, submit_remote_job
 from sva.memory.service import CorrectionSubmission, submit_correction
 from sva.queue import enqueue_job
 
 try:
-    from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+    from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
 except ModuleNotFoundError:  # pragma: no cover - depends on installed extras
     FastAPI = None  # type: ignore[assignment]
-    File = Form = UploadFile = HTTPException = None  # type: ignore[assignment]
+    File = Form = Response = UploadFile = HTTPException = None  # type: ignore[assignment]
 
 
 UPLOAD_DIR = Path("data/uploads")
@@ -186,6 +187,13 @@ def create_app() -> Any:
             correction_type=result.correction_type,
             created_memory_ids=result.created_memory_ids,
         ).model_dump()
+
+    @app.get("/exports/{game_id}.csv")
+    async def export_events_endpoint(game_id: str) -> Any:
+        job = get_job(game_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Unknown game: {game_id}")
+        return Response(content=render_events_csv(game_id), media_type="text/csv")
 
     return app
 

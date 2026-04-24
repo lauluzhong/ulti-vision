@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-last_updated: "2026-04-25T13:10:00.000Z"
+last_updated: "2026-04-25T14:10:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 22
-  completed_plans: 21
-  percent: 95
+  completed_plans: 22
+  percent: 100
 ---
 
 # Project State
@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Execute Phase 06 Wave 4 — CSV Export and Crash-Resume Verification (`06-04`)
+**Current Focus:** Phase 7 discuss/plan — Evaluation Harness and Alpha UI
 
 ## Current Position
 
-Phase: 06 (async-orchestration-and-api) — EXECUTING
-Plan: 3 of 4
-**Next Phase:** 6 (Async Orchestration & API)
-**Status:** Phase 6 planned
-**Progress:** Phase 6 executing, 3 of 4 plans complete
+Phase: 07 (evaluation-harness-and-alpha-ui) — DISCUSS/PLAN
+Plan: 0 of TBD
+**Next Phase:** 7 (Evaluation Harness & Alpha UI)
+**Status:** Phase 6 complete
+**Progress:** Phase 7 not yet planned
 
 ```
 Roadmap  ████████████ 100%
@@ -39,7 +39,7 @@ Phase 2  ████████████ 100% ✓
 Phase 3  ████████████ 100% ✓
 Phase 4  ████████████ 100% ✓
 Phase 5  ████████████ 100% ✓
-Phase 6  █████████░░░  75%
+Phase 6  ████████████ 100% ✓
 Phase 7  ░░░░░░░░░░░░   0%
 ```
 
@@ -49,8 +49,8 @@ Phase 7  ░░░░░░░░░░░░   0%
 |--------|--------|---------|
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
-| Phases complete | 7 | 5 |
-| Plans complete | 22 (Phases 1-6) | 21/22 |
+| Phases complete | 7 | 6 |
+| Plans complete | 22 (Phases 1-6) | 22/22 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 6 `06-04` (CSV export and crash-resume verification)
+- [ ] Discuss and plan Phase 7 (evaluation harness and alpha UI)
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 6 `06-03` is complete and `06-04` is unblocked.
+None. Phase 6 is complete and Phase 7 is ready for discuss/plan.
 
 ### Recent Decisions Log
 
@@ -111,10 +111,11 @@ None. Phase 6 `06-03` is complete and `06-04` is unblocked.
 - 2026-04-25: Phase 6 `06-01` complete. Queued jobs are now first-class persisted rows, `jobs` carries stage/progress truth, ingest can rebuild persisted job state for resume flows, and the repo has a resume-safe orchestration service ready for queue/API integration.
 - 2026-04-25: Phase 6 `06-02` complete. `POST /ingest` now returns durable queued job metadata with `202 Accepted`, `GET /jobs/{job_id}` polls canonical persisted stage/progress truth, and Dramatiq/Redis are wired as thin transport details instead of request-cycle execution.
 - 2026-04-25: Phase 6 `06-03` complete. `GET /games/{game_id}/events` now serves canonical filterable timelines from stored rows, and `POST /games/{game_id}/corrections` persists immutable coach corrections that derive coach-scoped memory rows through the existing Phase 5 substrate.
+- 2026-04-25: Phase 6 `06-04` complete. `GET /exports/{game_id}.csv` now exposes a stable human-facing export contract, and crash-resume regression coverage proves completed windows are reused after durable cache writes instead of being re-invoked.
 
 ## Session Continuity
 
-**Resume point:** Execute `06-04` (CSV Export and Crash-Resume Verification).
+**Resume point:** Discuss and plan Phase 7 (Evaluation Harness & Alpha UI).
 
 **Recent artifacts:**
 
@@ -176,6 +177,7 @@ None. Phase 6 `06-03` is complete and `06-04` is unblocked.
 - `.planning/phases/06-async-orchestration-and-api/06-03-PLAN.md` — canonical events API and corrections submission
 - `.planning/phases/06-async-orchestration-and-api/06-03-SUMMARY.md` — completed canonical events API and corrections submission
 - `.planning/phases/06-async-orchestration-and-api/06-04-PLAN.md` — CSV export and crash/resume verification
+- `.planning/phases/06-async-orchestration-and-api/06-04-SUMMARY.md` — completed CSV export and crash-resume verification
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
@@ -203,3 +205,5 @@ None. Phase 6 `06-03` is complete and `06-04` is unblocked.
 *Phase 6 plan 06-01 complete: 2026-04-25*
 *Phase 6 plan 06-02 complete: 2026-04-25*
 *Phase 6 plan 06-03 complete: 2026-04-25*
+*Phase 6 plan 06-04 complete: 2026-04-25*
+*Phase 6 complete: 2026-04-25*
