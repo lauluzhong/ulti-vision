@@ -115,6 +115,38 @@ def test_phase5_memory_and_corrections_tables_exist_when_migrated(migrated_db):
     assert "corrections" in rows
 
 
+def test_phase5_memory_embeddings_table_exists_when_migrated(migrated_db):
+    from sva.db import get_engine
+
+    eng = get_engine()
+    with eng.connect() as conn:
+        tables = conn.execute(
+            text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema='public' ORDER BY table_name"
+            )
+        ).scalars().all()
+        columns = conn.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='memory_embeddings' "
+                "ORDER BY column_name"
+            )
+        ).scalars().all()
+    assert "memory_embeddings" in tables
+    for column in [
+        "memory_id",
+        "provider",
+        "model_id",
+        "content_hash",
+        "dimensions",
+        "vector",
+        "created_at",
+        "updated_at",
+    ]:
+        assert column in columns
+
+
 def test_cost_aggregation_query_works(migrated_db):
     from sva.db import get_engine
 
