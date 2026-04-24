@@ -21,7 +21,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 - [x] **Phase 1: Foundation & Narrow Vertical Slice** - Swap-safe schemas, CFR transcode, observability, and a single-clip end-to-end CLI proof that every boundary works *(complete 2026-04-22)*
 - [x] **Phase 2: Ingest & Point Detection** - Full file/URL ingest and point-boundary detection pass that gates every downstream per-point computation *(complete 2026-04-23)*
 - [x] **Phase 3: Perception Layer** - VLM adapter with structured Observation output and per-window caching so prompt iteration is cheap *(complete 2026-04-23)*
-- [ ] **Phase 4: Interpretation & Event Taxonomy** - LLM adapter with USAU-rule composition that emits the full v1 event set with schema-validated output
+- [x] **Phase 4: Interpretation & Event Taxonomy** - LLM adapter with USAU-rule composition that emits the full v1 event set with schema-validated output *(complete 2026-04-24)*
 - [ ] **Phase 5: Memory & Correction Loop** - Model-agnostic memory store with tag+vector retrieval, scope-gated promotion, and a correction loop ready to absorb alpha feedback
 - [ ] **Phase 6: Async Orchestration & API** - Dramatiq job queue, resume-on-crash workflow, full HTTP API surface, and CSV export
 - [ ] **Phase 7: Evaluation Harness & Alpha UI** - Gold-set eval with per-event-type metrics, regression gate on memory promotions, and minimal coach-facing UI for upload, review, and correction — alpha opens here
@@ -121,7 +121,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | 1. Foundation & Narrow Vertical Slice | 5/5 | Complete    | 2026-04-23 |
 | 2. Ingest & Point Detection | 3/3 | Complete | 2026-04-23 |
 | 3. Perception Layer | 3/3 | Complete | 2026-04-23 |
-| 4. Interpretation & Event Taxonomy | 2/3 | In progress | - |
+| 4. Interpretation & Event Taxonomy | 3/3 | Complete | 2026-04-24 |
 | 5. Memory & Correction Loop | 0/TBD | Not started | - |
 | 6. Async Orchestration & API | 0/TBD | Not started | - |
 | 7. Evaluation Harness & Alpha UI | 0/TBD | Not started | - |
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-24 — Phase 4 executing; 04-03 integration next*
+*Last updated: 2026-04-24 — Phase 4 complete; Phase 5 discuss/plan next*
