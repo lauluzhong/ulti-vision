@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from sva.memory.records_dao import list_memory_records
 from sva.models import MemoryRecord
 
 
@@ -22,7 +23,7 @@ class RetrievalQuery(BaseModel):
 
 
 class MemoryRetriever:
-    """Phase 1: always returns []. Phase 5: tag-filter → vector-rank → diversity-cap."""
+    """Phase 5: scope-aware tag-first retrieval with honest non-vector fallback."""
 
     async def retrieve(
         self,
@@ -30,9 +31,33 @@ class MemoryRetriever:
         tags: list[str] | None = None,
         limit: int | None = None,
     ) -> list[MemoryRecord]:
-        """Return relevant memory records. Phase 1 stub: always []."""
-        _ = query, tags, limit  # Phase 5 will use these.
-        return []
+        """Return relevant memory records within the fixed swap-safe contract."""
+        effective_limit = limit or query.budget
+        scope_order = (
+            [f"coach:{query.current_coach_id}", "global"]
+            if query.current_coach_id
+            else ["global"]
+        )
+        candidate_tags: list[str] = []
+        for value in [query.event_candidate_type, *(tags or [])]:
+            normalized = value.strip()
+            if normalized and normalized not in candidate_tags:
+                candidate_tags.append(normalized)
+        if not candidate_tags:
+            return []
+
+        seen: set[str] = set()
+        ordered: list[MemoryRecord] = []
+        for scope in scope_order:
+            for tag in candidate_tags:
+                for record in list_memory_records(scopes=[scope], tag=tag, limit=effective_limit):
+                    if record.memory_id in seen:
+                        continue
+                    seen.add(record.memory_id)
+                    ordered.append(record)
+                    if len(ordered) >= effective_limit:
+                        return ordered
+        return ordered
 
 
 __all__ = ["MemoryRetriever", "RetrievalQuery"]

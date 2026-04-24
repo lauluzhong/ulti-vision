@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import text
 
-from sva.models import DiscObservation, ModelMetadata, Observation, PlayerCounts, SceneObservation
+from sva.models import DiscObservation, MemoryRecord, MemorySource, ModelMetadata, Observation, PlayerCounts, SceneObservation
 from sva.observability import TraceContext
 
 
@@ -155,7 +156,21 @@ def test_claude_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
         point_id="game_x:pt_001",
         point_ordinal=1,
     )
-    events = ClaudeInterpreter().interpret(ctx, [_dummy_obs(window_id="win_1"), _dummy_obs(window_id="win_2")], retrieved=[])
+    retrieved = [
+        MemoryRecord(
+            memory_id="mem_turnover_hint",
+            kind="correction",
+            tags=["turnover"],
+            scope="coach:coach_1",
+            source=MemorySource(origin="correction", source_coach_id="coach_1"),
+            created_at=datetime.now(timezone.utc),
+        )
+    ]
+    events = ClaudeInterpreter().interpret(
+        ctx,
+        [_dummy_obs(window_id="win_1"), _dummy_obs(window_id="win_2")],
+        retrieved=retrieved,
+    )
 
     assert len(events) == 2
     assert events[0].type == "completion"
@@ -165,6 +180,7 @@ def test_claude_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
     assert events[1].turnover_subtype == "unknown"
     assert events[0].prompt_version_hash is not None
     assert events[0].model.model_id == "claude-sonnet-4-5"
+    assert events[0].memory_refs == ["mem_turnover_hint"]
     assert events[1].rule_refs == ["USAU-13"]
 
 

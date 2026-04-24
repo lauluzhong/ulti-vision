@@ -54,7 +54,7 @@ def _extract_text_blocks(message: Any) -> str:
     return "\n".join(texts).strip()
 
 
-def _normalize_event(event: Event, ctx: TraceContext, source_ids: list[str]) -> Event:
+def _normalize_event(event: Event, ctx: TraceContext, source_ids: list[str], retrieved_ids: list[str]) -> Event:
     update: dict[str, Any] = {
         "prompt_version_hash": event.prompt_version_hash or ctx.prompt_version_hash,
         "point_id": event.point_id or ctx.point_id or f"{ctx.game_id}:pt_001",
@@ -62,7 +62,7 @@ def _normalize_event(event: Event, ctx: TraceContext, source_ids: list[str]) -> 
         "game_id": event.game_id or ctx.game_id,
         "source_observations": event.source_observations or source_ids,
         "rule_refs": event.rule_refs,
-        "memory_refs": event.memory_refs,
+        "memory_refs": event.memory_refs or retrieved_ids,
         "model": ModelMetadata(provider="anthropic", model_id=_MODEL_ID, version=_VERSION),
     }
     if event.type == "turnover" and event.turnover_subtype is None:
@@ -105,7 +105,8 @@ def _call_claude(
         raw_text = _extract_text_blocks(message)
         parsed = _EVENTS_ADAPTER.validate_python(json.loads(raw_text))
         source_ids = [obs.observation_id for obs in observations]
-        events = [_normalize_event(event, ctx, source_ids) for event in parsed]
+        retrieved_ids = [memory.memory_id for memory in retrieved]
+        events = [_normalize_event(event, ctx, source_ids, retrieved_ids) for event in parsed]
         updated_ctx = TraceContext(
             stage=ctx.stage,
             model=ctx.model,
