@@ -11,11 +11,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypeAlias
 
-from sqlalchemy import Column, DateTime, Numeric, Text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.sql import func
-
-from sva.db import Base, session_scope
 from sva.ingest.probe import VideoMetadata, probe_metadata
 from sva.ingest.sampler import window_offsets
 from sva.ingest.sources import (
@@ -27,27 +22,10 @@ from sva.ingest.sources import (
 )
 from sva.ingest.transcode import transcode_to_cfr
 from sva.ingest.url_download import download_public_video
+from sva.jobs_dao import JobRow, get_job, upsert_job
 
 TRANSCODED_DIR = Path("data/transcoded")
 SourceInput: TypeAlias = LocalFileSource | RemoteUrlSource
-
-
-class JobRow(Base):
-    """ORM mapping for the jobs table created by migration 0001_phase1_foundation."""
-
-    __tablename__ = "jobs"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    game_id = Column(Text, nullable=False, unique=True, index=True)
-    video_id = Column(Text, nullable=False)
-    status = Column(Text, nullable=False, server_default="pending")
-    cost_usd = Column(Numeric(12, 6), nullable=False, server_default="0")
-    source_path = Column(Text, nullable=True)
-    source_kind = Column(Text, nullable=True)
-    source_url = Column(Text, nullable=True)
-    duration_s = Column(Numeric(10, 3), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 @dataclass(frozen=True)
@@ -93,17 +71,18 @@ def _ingest_resolved_path(
 
     windows = window_offsets(out_meta.duration_s, fps=target_fps, window_size_s=2.0)
 
-    with session_scope() as session:
-        row = JobRow(
-            game_id=game_id,
-            video_id=video_id,
-            status="ingested",
-            source_path=str(src.resolve()),
-            source_kind=source_kind,
-            source_url=source_url,
-            duration_s=out_meta.duration_s,
-        )
-        session.add(row)
+    upsert_job(
+        game_id=game_id,
+        video_id=video_id,
+        status="ingested",
+        stage="ingest_complete",
+        progress={"target_fps": target_fps, "windows_total": len(windows)},
+        error_message=None,
+        source_path=str(src.resolve()),
+        source_kind=source_kind,
+        source_url=source_url,
+        duration_s=out_meta.duration_s,
+    )
 
     return IngestResult(
         video_id=video_id,
@@ -188,6 +167,44 @@ def ingest_clip(
     return ingest_local_file(path, game_id=game_id, target_fps=target_fps)
 
 
+def load_ingest_result_for_job(
+    game_id: str,
+    *,
+    target_fps: int | None = None,
+) -> IngestResult:
+    """Rebuild an ingest result from persisted job metadata for resume flows."""
+    job = get_job(game_id)
+    if job is None:
+        raise ValueError(f"Unknown job/game_id: {game_id}")
+    if not job.video_id:
+        raise ValueError(f"Job {game_id} has no persisted video_id yet")
+    if not job.source_path:
+        raise ValueError(f"Job {game_id} has no persisted source_path")
+
+    src = Path(job.source_path)
+    transcoded_path = TRANSCODED_DIR / f"{job.video_id}.mp4"
+    if not transcoded_path.exists():
+        raise FileNotFoundError(f"Transcoded video not found for job {game_id}: {transcoded_path}")
+
+    source_meta = probe_metadata(src)
+    transcoded_meta = probe_metadata(transcoded_path)
+    effective_fps = target_fps or int((job.progress or {}).get("target_fps", 1) or 1)
+    windows = window_offsets(transcoded_meta.duration_s, fps=effective_fps, window_size_s=2.0)
+    return IngestResult(
+        video_id=job.video_id,
+        game_id=job.game_id,
+        source_path=str(src.resolve()),
+        transcoded_path=str(transcoded_path.resolve()),
+        duration_s=transcoded_meta.duration_s,
+        status=job.status,
+        windows=windows,
+        source_metadata=source_meta,
+        transcoded_metadata=transcoded_meta,
+        source_kind=job.source_kind or "local_file",
+        source_url=job.source_url,
+    )
+
+
 __all__ = [
     "SourceInput",
     "ingest_clip",
@@ -196,5 +213,6 @@ __all__ = [
     "ingest_source",
     "IngestResult",
     "JobRow",
+    "load_ingest_result_for_job",
     "TRANSCODED_DIR",
 ]

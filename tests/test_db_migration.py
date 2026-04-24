@@ -50,6 +50,25 @@ def test_jobs_and_events_tables_exist(migrated_db):
     assert "events" in rows
 
 
+def test_phase6_job_progress_columns_exist_when_migrated(migrated_db):
+    from sva.db import get_engine
+
+    eng = get_engine()
+    with eng.connect() as conn:
+        columns = conn.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='jobs' ORDER BY column_name"
+            )
+        ).scalars().all()
+    for column in [
+        "stage",
+        "progress",
+        "error_message",
+    ]:
+        assert column in columns
+
+
 def test_phase2_rights_ack_table_exists_when_migrated(migrated_db):
     from sva.db import get_engine
 

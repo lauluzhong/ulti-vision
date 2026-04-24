@@ -7,6 +7,7 @@ from sva.ingest.ingest import (
     ingest_local_file,
     ingest_remote_url,
     ingest_source,
+    load_ingest_result_for_job,
 )
 from sva.ingest.probe import VideoMetadata, probe_metadata
 from sva.ingest.sampler import window_offsets
@@ -42,6 +43,7 @@ __all__ = [
     "ingest_local_file",
     "ingest_remote_url",
     "ingest_source",
+    "load_ingest_result_for_job",
     "probe_metadata",
     "transcode_to_cfr",
     "validate_local_source",
