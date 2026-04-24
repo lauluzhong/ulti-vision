@@ -1,4 +1,4 @@
-"""Unit tests for Phase 2 point-aware pipeline orchestration."""
+"""Unit tests for point-aware pipeline orchestration."""
 
 from __future__ import annotations
 
@@ -110,21 +110,44 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
 
     def fake_run_point(ctx, observations, interpreter=None, retrieved=None):
         order.append(f"interpret:{ctx.point_id}")
-        return Event(
-            event_id=f"evt_{ctx.point_id}",
+        base_event = dict(
             game_id=ctx.game_id,
             point_id=ctx.point_id or "missing",
             point_ordinal=ctx.point_ordinal or 0,
-            video_ts_ms=observations[0].observation_ts_ms,
             in_point_ts_ms=0,
-            type="unknown",
-            team="unknown",
             model=ModelMetadata(provider="dummy", model_id="dummy-llm", version="test"),
         )
+        if ctx.point_id == "game_test:pt_001":
+            return [
+                Event(
+                    event_id="evt_game_test_pt_001_completion",
+                    video_ts_ms=observations[0].observation_ts_ms,
+                    type="completion",
+                    team="dark",
+                    **base_event,
+                ),
+                Event(
+                    event_id="evt_game_test_pt_001_turnover",
+                    video_ts_ms=observations[0].observation_ts_ms + 200,
+                    type="turnover",
+                    team="dark",
+                    **base_event,
+                ),
+            ]
+        return [
+            Event(
+                event_id="evt_game_test_pt_002_goal",
+                video_ts_ms=observations[0].observation_ts_ms,
+                type="goal",
+                team="light",
+                **base_event,
+            )
+        ]
 
-    def fake_insert_event(event):
-        order.append(f"persist_event:{event.point_id}")
-        inserted_events.append(event)
+    def fake_insert_events(events):
+        for event in events:
+            order.append(f"persist_event:{event.event_id}")
+            inserted_events.append(event)
 
     monkeypatch.setattr("sva.pipeline.ingest_clip", fake_ingest_clip)
     monkeypatch.setattr("sva.pipeline._build_point_boundary_candidates", fake_build_candidates)
@@ -136,7 +159,7 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
     monkeypatch.setattr("sva.pipeline.make_default_interpreter", lambda: SimpleNamespace(model_id="dummy-llm"))
     monkeypatch.setattr("sva.pipeline.insert_observations", fake_insert_observations)
     monkeypatch.setattr("sva.pipeline.run_point", fake_run_point)
-    monkeypatch.setattr("sva.pipeline.insert_event", fake_insert_event)
+    monkeypatch.setattr("sva.pipeline.insert_events", fake_insert_events)
     monkeypatch.setattr("sva.pipeline._read_total_cost", lambda game_id: Decimal("1.23"))
     monkeypatch.setattr("sva.pipeline._mark_job_complete", lambda game_id: order.append("complete"))
     monkeypatch.setattr(
@@ -150,22 +173,33 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
     result = run_pipeline("tests/fixtures/cfr_baseline.mp4", game_id="game_test")
     second_result = run_pipeline("tests/fixtures/cfr_baseline.mp4", game_id="game_test")
 
-    assert result.events_inserted == 2
+    assert result.events_inserted == 3
     assert result.observations == 2
-    assert second_result.events_inserted == 2
+    assert second_result.events_inserted == 3
     assert second_result.observations == 2
     assert order.index("detect") < order.index("perceive:game_test:pt_001")
     assert order.index("detect") < order.index("perceive:game_test:pt_002")
     assert order.index("persist_observation:game_test:pt_001") < order.index("interpret:game_test:pt_001")
     assert order.index("persist_observation:game_test:pt_002") < order.index("interpret:game_test:pt_002")
-    assert order.index("interpret:game_test:pt_001") < order.index("persist_event:game_test:pt_001")
-    assert order.index("interpret:game_test:pt_002") < order.index("persist_event:game_test:pt_002")
+    assert order.index("interpret:game_test:pt_001") < order.index("persist_event:evt_game_test_pt_001_completion")
+    assert order.index("persist_event:evt_game_test_pt_001_completion") < order.index("persist_event:evt_game_test_pt_001_turnover")
+    assert order.index("interpret:game_test:pt_002") < order.index("persist_event:evt_game_test_pt_002_goal")
     assert [event.point_id for event in inserted_events] == [
         "game_test:pt_001",
+        "game_test:pt_001",
         "game_test:pt_002",
+        "game_test:pt_001",
         "game_test:pt_001",
         "game_test:pt_002",
     ]
-    assert [event.point_ordinal for event in inserted_events] == [1, 2, 1, 2]
-    assert [event.in_point_ts_ms for event in inserted_events] == [500, 999, 500, 999]
+    assert [event.type for event in inserted_events] == [
+        "completion",
+        "turnover",
+        "goal",
+        "completion",
+        "turnover",
+        "goal",
+    ]
+    assert [event.point_ordinal for event in inserted_events] == [1, 1, 2, 1, 1, 2]
+    assert [event.in_point_ts_ms for event in inserted_events] == [500, 700, 999, 500, 700, 999]
     assert perceive_calls["count"] == 2

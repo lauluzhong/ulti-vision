@@ -78,6 +78,28 @@ def test_phase3_observations_table_exists_when_migrated(migrated_db):
     assert "observations" in rows
 
 
+def test_phase4_event_audit_columns_exist_when_migrated(migrated_db):
+    from sva.db import get_engine
+
+    eng = get_engine()
+    with eng.connect() as conn:
+        rows = conn.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema='public' AND table_name='events' ORDER BY column_name"
+            )
+        ).scalars().all()
+    for column in [
+        "turnover_subtype",
+        "throw_type",
+        "pass_direction",
+        "prompt_version_hash",
+        "rule_refs",
+        "warnings",
+    ]:
+        assert column in rows
+
+
 def test_cost_aggregation_query_works(migrated_db):
     from sva.db import get_engine
 

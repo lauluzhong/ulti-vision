@@ -16,7 +16,7 @@ from pathlib import Path
 from sqlalchemy import text
 
 from sva.db import get_engine
-from sva.events_dao import insert_event
+from sva.events_dao import insert_events
 from sva.ingest import IngestResult, ingest_clip
 from sva.ingest.sampler import make_window_id
 from sva.interpret import make_default_interpreter, run_point
@@ -198,14 +198,19 @@ def run_pipeline(
             point_id=point.point_id,
             point_ordinal=point.point_ordinal,
         )
-        event = run_point(interpret_ctx, point_observations, interpreter=interpreter, retrieved=retrieved)
-        scoped_event = _apply_point_scope(
-            event,
-            point,
-            fallback_ts_ms=point_observations[0].observation_ts_ms,
-        )
-        insert_event(scoped_event)
-        events_inserted += 1
+        events = run_point(interpret_ctx, point_observations, interpreter=interpreter, retrieved=retrieved)
+        scoped_events = [
+            _apply_point_scope(
+                event,
+                point,
+                fallback_ts_ms=point_observations[0].observation_ts_ms,
+            )
+            for event in events
+        ]
+        if not scoped_events:
+            continue
+        insert_events(scoped_events)
+        events_inserted += len(scoped_events)
 
     total_cost = _read_total_cost(ing.game_id)
 

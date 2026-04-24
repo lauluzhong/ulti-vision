@@ -1,4 +1,4 @@
-"""End-to-end CLI test: ingest -> perceive stub -> interpret stub -> Event row."""
+"""End-to-end CLI test: ingest -> perceive -> interpret -> persisted event rows."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def _ensure_vfr_fixture():
 
 
 @pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable")
-def test_run_pipeline_produces_event_row():
+def test_run_pipeline_produces_event_rows():
     from sva.db import get_engine
     from sva.pipeline import run_pipeline
 
@@ -59,7 +59,7 @@ def test_run_pipeline_produces_event_row():
     # Phase 1 success criterion #1 — assertions:
     assert result.windows_processed > 0
     assert result.observations > 0
-    assert result.events_inserted == 1
+    assert result.events_inserted >= 1
     assert result.total_cost_usd > 0
 
     # Verify DB rows
@@ -91,9 +91,9 @@ def test_run_pipeline_produces_event_row():
     assert job_row is not None
     assert job_row.status == "complete"
     assert float(job_row.cost_usd) > 0
-    assert event_count == 1
+    assert event_count == result.events_inserted
     assert point_count == 1
-    assert point_scoped_count == 1
+    assert point_scoped_count == event_count
     assert event_rows[0].point_id == f"{game_id}:pt_001"
     assert event_rows[0].point_ordinal == 1
     assert int(event_rows[0].in_point_ts_ms) >= 0
