@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-04-24T15:05:00.000Z"
+status: executing
+last_updated: "2026-04-24T16:45:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 18
+  total_plans: 21
   completed_plans: 18
-  percent: 100
+  percent: 86
 ---
 
 # Project State
@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Plan Phase 06 — Async Orchestration & API
+**Current Focus:** Execute Phase 06 Wave 1 — Durable Jobs & Async API Foundation (`06-01`)
 
 ## Current Position
 
-Phase: 06 (async-orchestration-and-api) — DISCUSS/PLAN
-Plan: not started
+Phase: 06 (async-orchestration-and-api) — EXECUTING
+Plan: 0 of 3
 **Next Phase:** 6 (Async Orchestration & API)
-**Status:** Phase 5 complete; Phase 6 ready for discuss/plan
-**Progress:** Phases 1-5 complete; next step is Phase 6 planning
+**Status:** Phase 6 planned
+**Progress:** Phase 6 executing, 0 of 3 plans complete
 
 ```
 Roadmap  ████████████ 100%
@@ -50,7 +50,7 @@ Phase 7  ░░░░░░░░░░░░   0%
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
 | Phases complete | 7 | 5 |
-| Plans complete | 18 (Phases 1-5) | 18/18 |
+| Plans complete | 21 (Phases 1-6) | 18/21 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,13 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Plan Phase 6 (async orchestration, job resumability, and HTTP API surface)
+- [ ] Execute Phase 6 `06-01` (durable job lifecycle and orchestration substrate)
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 6 planning is unblocked.
+None. Phase 6 `06-01` is unblocked.
 
 ### Recent Decisions Log
 
@@ -107,10 +107,11 @@ None. Phase 6 planning is unblocked.
 - 2026-04-24: Phase 5 `05-03` complete. Corrections now derive coach-scoped memory rows and global promotion is hard-blocked unless distinct-coach corroboration plus builder curation are both present.
 - 2026-04-24: Phase 5 gap identified. `MEMORY-02` still needs real semantic ranking, so explicit gap plan `05-04` was added instead of falsely marking the phase complete.
 - 2026-04-24: Phase 5 `05-04` complete. Retrieval now ranks candidate memories semantically through a model-agnostic embedding seam, persisted embedding state lives in Postgres, and Phase 5 is now honestly complete.
+- 2026-04-24: Phase 6 planned. Context, research, pattern mapping, and three executable plans now define the async-orchestration path: durable job/progress truth first, async submission/status/event reads second, and corrections/export plus resume verification third.
 
 ## Session Continuity
 
-**Resume point:** Start Phase 6 discuss/plan.
+**Resume point:** Execute `06-01` (Durable Job Lifecycle & Orchestration Substrate).
 
 **Recent artifacts:**
 
@@ -162,6 +163,12 @@ None. Phase 6 planning is unblocked.
 - `.planning/phases/05-memory-correction-loop/05-03-SUMMARY.md` — completed Wave 2 correction writer and contamination-control gate
 - `.planning/phases/05-memory-correction-loop/05-04-PLAN.md` — semantic-ranking gap closure for `MEMORY-02`
 - `.planning/phases/05-memory-correction-loop/05-04-SUMMARY.md` — completed semantic-ranking closure and persisted embedding substrate
+- `.planning/phases/06-async-orchestration-and-api/06-CONTEXT.md` — locked Phase 6 implementation boundary
+- `.planning/phases/06-async-orchestration-and-api/06-RESEARCH.md` — Phase 6 async/API planning memo
+- `.planning/phases/06-async-orchestration-and-api/06-PATTERNS.md` — code analogs for jobs, API, orchestration, and export
+- `.planning/phases/06-async-orchestration-and-api/06-01-PLAN.md` — durable job lifecycle and orchestration substrate
+- `.planning/phases/06-async-orchestration-and-api/06-02-PLAN.md` — async submission/status API and event reads
+- `.planning/phases/06-async-orchestration-and-api/06-03-PLAN.md` — corrections API, CSV export, and resume verification
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
@@ -185,3 +192,4 @@ None. Phase 6 planning is unblocked.
 *Phase 5 plan 05-02 complete: 2026-04-24*
 *Phase 5 plan 05-03 complete: 2026-04-24*
 *Phase 5 complete: 2026-04-24*
+*Phase 6 planned: 2026-04-24*

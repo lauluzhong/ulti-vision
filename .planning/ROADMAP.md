@@ -98,7 +98,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   2. `GET /games/:id/events` returns a per-point event timeline filterable by `point`, `event_type`, and `team`; `POST /games/:id/corrections` accepts a coach correction against a specific event and triggers the memory writer.
   3. Killing the worker mid-game and restarting it does not re-invoke Gemini on completed windows — the DB shows each window was called exactly once; resume picks up from the first unfinished window.
   4. `GET /exports/:game_id.csv` returns a one-row-per-event CSV with stable, documented, versioned columns (no internal IDs like `observation_id` in the user-facing CSV).
-**Plans**: TBD
+**Plans**: 06-01 durable job lifecycle and orchestration substrate; 06-02 async submission/status API and event reads; 06-03 corrections API, CSV export, and resume verification
 **UI hint**: no
 
 ### Phase 7: Evaluation Harness & Alpha UI
@@ -123,7 +123,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | 3. Perception Layer | 3/3 | Complete | 2026-04-23 |
 | 4. Interpretation & Event Taxonomy | 3/3 | Complete | 2026-04-24 |
 | 5. Memory & Correction Loop | 4/4 | Complete | 2026-04-24 |
-| 6. Async Orchestration & API | 0/TBD | Not started | - |
+| 6. Async Orchestration & API | 0/3 | In progress | - |
 | 7. Evaluation Harness & Alpha UI | 0/TBD | Not started | - |
 
 ## Coverage Summary
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-24 — Phase 5 complete; Phase 6 discuss/plan next*
+*Last updated: 2026-04-24 — Phase 6 planned; 06-01 durable job lifecycle next*
