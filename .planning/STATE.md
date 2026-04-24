@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-last_updated: "2026-04-24T10:05:00.000Z"
+status: executing
+last_updated: "2026-04-24T12:05:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  total_plans: 17
+  completed_plans: 15
+  percent: 88
 ---
 
 # Project State
@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Discuss/plan Phase 05 — Memory & Correction Loop
+**Current Focus:** Execute Phase 05 Wave 1 — Scoped Retrieval & Interpret Integration (`05-02`)
 
 ## Current Position
 
-Phase: 05 (memory-correction-loop) — READY FOR DISCUSS/PLAN
-Plan: 0 of TBD
+Phase: 05 (memory-correction-loop) — EXECUTING
+Plan: 1 of 3
 **Next Phase:** 5 (Memory & Correction Loop)
-**Status:** Phase 4 complete; Phase 5 not yet planned
-**Progress:** Phase 4 complete, 4 of 7 phases finished
+**Status:** Phase 5 executing
+**Progress:** Phase 5 executing, 1 of 3 plans complete
 
 ```
 Roadmap  ████████████ 100%
@@ -50,7 +50,7 @@ Phase 7  ░░░░░░░░░░░░   0%
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
 | Phases complete | 7 | 4 |
-| Plans complete | 14 (Phases 1-4) | 14/14 |
+| Plans complete | 17 (Phases 1-5) | 15/17 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,14 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Discuss and plan Phase 5 (memory retrieval, correction provenance, and promotion gates)
+- [ ] Execute Phase 5 `05-02` (scoped retrieval and interpret memory integration)
+- [ ] Execute Phase 5 `05-03` (correction writer and promotion gate)
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 4 is complete and Phase 5 can start.
+None. Phase 5 is in execution and `05-02` is unblocked.
 
 ### Recent Decisions Log
 
@@ -101,10 +102,12 @@ None. Phase 4 is complete and Phase 5 can start.
 - 2026-04-24: Phase 4 `04-02` complete. ClaudeInterpreter now uses the real Anthropic SDK path, prompt construction is factored into a dedicated helper, and interpret traces preserve prompt-version identity plus explicit failure status.
 - 2026-04-24: Phase 4 `04-03` complete. The point-aware pipeline now fans out and persists canonical multi-event timelines, event DAO queries support point/type/team slicing plus derived pass count, and the event schema persists the new Phase 4 audit/detail fields via migration 0006.
 - 2026-04-24: Phase 4 complete. All 14 plans across Phases 1-4 are now complete; the next GSD step is Phase 5 discuss/plan.
+- 2026-04-24: Phase 5 planned. Context, research, pattern mapping, and three executable plans now define the memory path: persistence substrate first, scoped retrieval second, and correction writer/promotion logic third.
+- 2026-04-24: Phase 5 `05-01` complete. The repo now has canonical Postgres persistence for memory records and immutable coach corrections, plus migration/test coverage for the new memory/corrections substrate.
 
 ## Session Continuity
 
-**Resume point:** Start Phase 5 discuss/plan.
+**Resume point:** Execute `05-02` (Scoped Retrieval & Interpret Integration).
 
 **Recent artifacts:**
 
@@ -145,6 +148,13 @@ None. Phase 4 is complete and Phase 5 can start.
 - `.planning/phases/04-interpretation-event-taxonomy/04-02-SUMMARY.md` — completed Wave 1 real Claude adapter and prompt/observability work
 - `.planning/phases/04-interpretation-event-taxonomy/04-03-PLAN.md` — point-aware pipeline fan-out and event persistence verification
 - `.planning/phases/04-interpretation-event-taxonomy/04-03-SUMMARY.md` — completed Wave 2 pipeline fan-out, DAO queryability, and event-audit persistence work
+- `.planning/phases/05-memory-correction-loop/05-CONTEXT.md` — locked Phase 5 implementation decisions
+- `.planning/phases/05-memory-correction-loop/05-RESEARCH.md` — Phase 5 planning memo
+- `.planning/phases/05-memory-correction-loop/05-PATTERNS.md` — file-level analogs for memory/corrections persistence and retrieval integration
+- `.planning/phases/05-memory-correction-loop/05-01-PLAN.md` — memory persistence and correction ledger
+- `.planning/phases/05-memory-correction-loop/05-01-SUMMARY.md` — completed Wave 1 memory/correction persistence substrate
+- `.planning/phases/05-memory-correction-loop/05-02-PLAN.md` — scoped retrieval and interpret memory integration
+- `.planning/phases/05-memory-correction-loop/05-03-PLAN.md` — correction writer and promotion gate
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
@@ -163,3 +173,5 @@ None. Phase 4 is complete and Phase 5 can start.
 *Phase 4 plan 04-02 complete: 2026-04-24*
 *Phase 4 plan 04-03 complete: 2026-04-24*
 *Phase 4 complete: 2026-04-24*
+*Phase 5 planned: 2026-04-24*
+*Phase 5 plan 05-01 complete: 2026-04-24*

@@ -86,7 +86,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   2. Interpret retrieves memory via a tag-filter-first + vector-rank-second query with a fixed budget (4-8 records) scoped to `global ∪ coach:<current>`; swapping the embedding provider requires a re-embed batch job but no schema migration.
   3. A submitted correction produces immutable records in the corrections table with full provenance (`coach_id`, `correction_id`, source event id, original VLM/LLM output) and spawns memory records at `scope: coach:<id>` by default — never `global`.
   4. Promotion of a memory record to `scope: global` hard-blocks unless at least 2 distinct `coach_id` values have corroborated the same correction pattern; during alpha a curator-review flag is required in addition. The enforcement is in code, not policy — a unit test verifies a single-coach loop cannot reach global.
-**Plans**: TBD
+**Plans**: 05-01 memory persistence and correction ledger; 05-02 scoped retrieval and interpret memory integration; 05-03 correction writer and promotion gate
 **UI hint**: no
 
 ### Phase 6: Async Orchestration & API
@@ -122,7 +122,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | 2. Ingest & Point Detection | 3/3 | Complete | 2026-04-23 |
 | 3. Perception Layer | 3/3 | Complete | 2026-04-23 |
 | 4. Interpretation & Event Taxonomy | 3/3 | Complete | 2026-04-24 |
-| 5. Memory & Correction Loop | 0/TBD | Not started | - |
+| 5. Memory & Correction Loop | 1/3 | In progress | - |
 | 6. Async Orchestration & API | 0/TBD | Not started | - |
 | 7. Evaluation Harness & Alpha UI | 0/TBD | Not started | - |
 
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-24 — Phase 4 complete; Phase 5 discuss/plan next*
+*Last updated: 2026-04-24 — Phase 5 planned and executing; 05-02 retrieval integration next*
