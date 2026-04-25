@@ -43,3 +43,24 @@ The project uses the PEP 517 `src/` layout. Top-level Python package is `sva`.
 ## Configuration
 
 All secrets load from `.env` via `pydantic-settings`. Missing required keys raise a `ValidationError` at import time — see `src/sva/config.py`. The required keys are documented in `.env.example`.
+
+## Deployment Shape
+
+The current production shape is:
+
+- Vercel for the SvelteKit frontend in `apps/web`
+- Render for the Python backend
+- Render Postgres for the relational database with `pgvector`
+- Render Key Value (Redis-compatible) for Dramatiq queue transport
+- A Render persistent disk mounted at `/app/data` for uploaded clips and transcoded video files
+
+This repo now includes:
+
+- [render.yaml](/Users/lauluzhong/Documents/Sports%20Video%20Analytics/render.yaml) — Render Blueprint for backend + Postgres + Key Value
+- [Dockerfile](/Users/lauluzhong/Documents/Sports%20Video%20Analytics/Dockerfile) — backend image with ffmpeg installed
+- [scripts/start_backend.sh](/Users/lauluzhong/Documents/Sports%20Video%20Analytics/scripts/start_backend.sh) — starts migrations, Dramatiq, and Uvicorn in one service
+
+Important current constraint:
+
+- The backend stores uploads and transcoded video on local disk (`data/uploads`, `data/transcoded`), so the simplest deploy is a single backend service that runs both the API and worker against one persistent disk.
+- This is deliberate for v1. Splitting API and worker into separate services cleanly will require shared object storage later.

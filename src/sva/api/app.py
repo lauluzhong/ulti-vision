@@ -31,13 +31,21 @@ from sva.ingest.ingest import TRANSCODED_DIR
 
 try:
     from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
+    from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import FileResponse
 except ModuleNotFoundError:  # pragma: no cover - depends on installed extras
     FastAPI = None  # type: ignore[assignment]
-    File = Form = Response = UploadFile = HTTPException = FileResponse = None  # type: ignore[assignment]
+    File = Form = Response = UploadFile = HTTPException = FileResponse = CORSMiddleware = None  # type: ignore[assignment]
 
 
 UPLOAD_DIR = Path("data/uploads")
+
+
+def _allowed_origins() -> list[str]:
+    raw = settings.cors_allow_origins.strip()
+    if not raw:
+        return []
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 def _save_upload(upload: Any) -> Path:
     suffix = Path(upload.filename or "upload.bin").suffix or ".bin"
@@ -99,6 +107,19 @@ def create_app() -> Any:
         raise RuntimeError("fastapi is not installed. Install project dependencies to use the API surface.")
 
     app = FastAPI(title="Sports Video Analytics API", version="0.1.0")
+    allowed_origins = _allowed_origins()
+    if allowed_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=allowed_origins,
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+    @app.get("/healthz")
+    async def healthz() -> dict[str, bool]:
+        return {"ok": True}
 
     @app.post("/ingest", status_code=202)
     async def ingest_endpoint(

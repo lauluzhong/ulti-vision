@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     )
     database_url: str = Field(..., alias="DATABASE_URL")
     redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    cors_allow_origins: str = Field(default="", alias="CORS_ALLOW_ORIGINS")
 
     model_config = SettingsConfigDict(
         env_file=".env",

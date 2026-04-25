@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: ulti-vision-api
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /healthz
+    disk:
+      name: sva-data
+      mountPath: /app/data
+      sizeGB: 5
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_HOST
+        value: https://cloud.langfuse.com
+      - key: CORS_ALLOW_ORIGINS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ulti-vision-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: ulti-vision-redis
+          property: connectionString
+
+  - type: keyvalue
+    name: ulti-vision-redis
+    region: singapore
+    plan: starter
+    maxmemoryPolicy: noeviction
+
+databases:
+  - name: ulti-vision-db
+    region: singapore
+    postgresMajorVersion: "16"
