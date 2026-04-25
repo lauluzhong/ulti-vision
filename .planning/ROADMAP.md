@@ -111,7 +111,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
   3. Every `scope: global` memory promotion runs the eval harness and is hard-blocked if any event type's recall drops by ≥ 3 points; the gate is code-enforced, not a warning.
   4. A coach can open the web UI, upload a local file or paste a URL, watch progress stream per-point, view the per-point event list with timestamps that scrub the embedded video to the corresponding moment, see a stats dashboard (completion %, turnover count, goals, throw-type mix, pass count, per-point and per-game), and submit at least the four v1 correction types (flag wrong, re-classify type, mark missed, delete spurious) in three interactions or fewer.
   5. The video player hosts a point-boundary editor that a coach runs before the event timeline finalizes; correcting a boundary re-buckets downstream events to the corrected point_id.
-**Plans**: TBD
+**Plans**: 07-01 eval contracts + gold-set loader + metrics harness; 07-02 memory-promotion regression gate; 07-03 point-boundary API + rebucketing service; 07-04 minimal SvelteKit alpha UI scaffold; 07-05 correction UI + point-boundary editor
 **UI hint**: yes
 
 ## Progress Table
@@ -124,7 +124,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | 4. Interpretation & Event Taxonomy | 3/3 | Complete | 2026-04-24 |
 | 5. Memory & Correction Loop | 4/4 | Complete | 2026-04-24 |
 | 6. Async Orchestration & API | 4/4 | Complete | 2026-04-25 |
-| 7. Evaluation Harness & Alpha UI | 0/TBD | Not started | - |
+| 7. Evaluation Harness & Alpha UI | 0/5 | Planned | - |
 
 ## Coverage Summary
 
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-25 — Phase 6 complete; Phase 7 discuss/plan next*
+*Last updated: 2026-04-25 — Phase 7 planned; 07-01 eval harness and 07-03 point-boundary API are the first execution wave*

@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Phase 7 discuss/plan — Evaluation Harness and Alpha UI
+**Current Focus:** Execute Phase 07 Wave 1 — Eval Harness Core (`07-01`)
 
 ## Current Position
 
-Phase: 07 (evaluation-harness-and-alpha-ui) — DISCUSS/PLAN
-Plan: 0 of TBD
+Phase: 07 (evaluation-harness-and-alpha-ui) — EXECUTING
+Plan: 0 of 5
 **Next Phase:** 7 (Evaluation Harness & Alpha UI)
-**Status:** Phase 6 complete
-**Progress:** Phase 7 not yet planned
+**Status:** Phase 7 planned
+**Progress:** Phase 7 executing, 0 of 5 plans complete
 
 ```
 Roadmap  ████████████ 100%
@@ -50,7 +50,7 @@ Phase 7  ░░░░░░░░░░░░   0%
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
 | Phases complete | 7 | 6 |
-| Plans complete | 22 (Phases 1-6) | 22/22 |
+| Plans complete | 27 (Phases 1-7) | 22/27 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,13 +76,15 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Discuss and plan Phase 7 (evaluation harness and alpha UI)
+- [ ] Execute Phase 7 `07-01` (eval contracts, gold-set loader, and metrics harness)
+- [ ] Execute Phase 7 `07-03` (point-boundary API and rebucketing service)
+- [ ] [BLOCKER] Add the real gold set: at least 3 full games / ~40 points with builder + independent annotator labels and agreement notes
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
 - [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
 
 ### Blockers
 
-None. Phase 6 is complete and Phase 7 is ready for discuss/plan.
+No coding blocker for the first wave. Final alpha closeout remains blocked on the real gold set and independent annotator data.
 
 ### Recent Decisions Log
 
@@ -112,10 +114,12 @@ None. Phase 6 is complete and Phase 7 is ready for discuss/plan.
 - 2026-04-25: Phase 6 `06-02` complete. `POST /ingest` now returns durable queued job metadata with `202 Accepted`, `GET /jobs/{job_id}` polls canonical persisted stage/progress truth, and Dramatiq/Redis are wired as thin transport details instead of request-cycle execution.
 - 2026-04-25: Phase 6 `06-03` complete. `GET /games/{game_id}/events` now serves canonical filterable timelines from stored rows, and `POST /games/{game_id}/corrections` persists immutable coach corrections that derive coach-scoped memory rows through the existing Phase 5 substrate.
 - 2026-04-25: Phase 6 `06-04` complete. `GET /exports/{game_id}.csv` now exposes a stable human-facing export contract, and crash-resume regression coverage proves completed windows are reused after durable cache writes instead of being re-invoked.
+- 2026-04-25: Phase 6 complete. All four async/API plans are shipped with verification.
+- 2026-04-25: Phase 7 planned. The phase is split into five plans: eval harness core, promotion regression gate, point-boundary backend/rebucketing, SvelteKit alpha scaffold, and final correction/boundary UI flows. The real gold set is kept as an explicit external blocker.
 
 ## Session Continuity
 
-**Resume point:** Discuss and plan Phase 7 (Evaluation Harness & Alpha UI).
+**Resume point:** Execute `07-01` (Eval Contracts, Gold-Set Loader, and Metrics Harness).
 
 **Recent artifacts:**
 
