@@ -22,6 +22,7 @@ from sqlalchemy import text
 
 from sva import __version__
 from sva.db import get_engine
+from sva.eval import run_eval
 from sva.ingest import ingest_local_file, ingest_remote_url
 from sva.pipeline import run_pipeline
 
@@ -32,6 +33,8 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+eval_app = typer.Typer(help="Evaluation harness commands.")
+app.add_typer(eval_app, name="eval")
 
 
 @app.command()
@@ -135,6 +138,19 @@ def cost(game_id: Annotated[str, typer.Argument(help="game_id to aggregate cost 
 def version() -> None:
     """Print sva package version."""
     console.print(f"sva {__version__}")
+
+
+@eval_app.command("run")
+def eval_run(
+    gold_manifest: Annotated[Path, typer.Argument(exists=True, readable=True)],
+    predictions: Annotated[
+        Path | None,
+        typer.Option("--predictions", exists=True, readable=True, help="Optional predicted-events JSON fixture"),
+    ] = None,
+) -> None:
+    """Run the Phase 7 eval harness against a gold manifest."""
+    report = run_eval(gold_manifest, predictions_path=predictions)
+    console.print_json(data=report.model_dump(mode="json"))
 
 
 def main() -> None:

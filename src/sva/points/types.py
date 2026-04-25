@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-SignalSource = Literal["scoreboard", "pull", "vlm"]
+SignalSource = Literal["scoreboard", "pull", "vlm", "manual"]
 
 
 class BoundarySignal(BaseModel):

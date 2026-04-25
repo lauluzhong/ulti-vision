@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from sva.points.types import BoundarySignal
+
 
 class JobSubmissionResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -51,6 +53,52 @@ class GameEventsResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
     game_id: str
     events: list[EventResponse]
+
+
+class PointBoundaryEdit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    start_video_ts_ms: int = Field(ge=0)
+    end_video_ts_ms: int = Field(ge=0)
+
+
+class PointBoundaryResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    point_id: str
+    point_ordinal: int = Field(ge=1)
+    start_video_ts_ms: int = Field(ge=0)
+    end_video_ts_ms: int = Field(ge=0)
+    confidence: float = Field(ge=0.0, le=1.0)
+    boundary_evidence: list[BoundarySignal] = Field(default_factory=list)
+
+
+class GamePointsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    game_id: str
+    points: list[PointBoundaryResponse]
+
+
+class PointBoundaryUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    points: list[PointBoundaryEdit] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _validate_order(self) -> "PointBoundaryUpdateRequest":
+        previous_end: int | None = None
+        for point in self.points:
+            if point.end_video_ts_ms < point.start_video_ts_ms:
+                raise ValueError("point boundary end_video_ts_ms must be >= start_video_ts_ms")
+            if previous_end is not None and point.start_video_ts_ms <= previous_end:
+                raise ValueError("points must be ordered and non-overlapping")
+            previous_end = point.end_video_ts_ms
+        return self
+
+
+class PointBoundaryUpdateResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    game_id: str
+    points: list[PointBoundaryResponse]
+    events_rebucketed: int = Field(ge=0)
+    observations_rebucketed: int = Field(ge=0)
 
 
 class CorrectionCreateRequest(BaseModel):
@@ -108,6 +156,11 @@ __all__ = [
     "CorrectionResponse",
     "EventResponse",
     "GameEventsResponse",
+    "GamePointsResponse",
     "JobStatusResponse",
     "JobSubmissionResponse",
+    "PointBoundaryEdit",
+    "PointBoundaryResponse",
+    "PointBoundaryUpdateRequest",
+    "PointBoundaryUpdateResponse",
 ]

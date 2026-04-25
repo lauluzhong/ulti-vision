@@ -12,21 +12,29 @@ from sva.api.contracts import (
     CorrectionResponse,
     EventResponse,
     GameEventsResponse,
+    GamePointsResponse,
     JobStatusResponse,
     JobSubmissionResponse,
+    PointBoundaryResponse,
+    PointBoundaryUpdateRequest,
+    PointBoundaryUpdateResponse,
 )
 from sva.events_dao import list_event_rows
 from sva.exports import render_events_csv
 from sva.jobs_dao import get_job
 from sva.jobs_service import submit_local_job, submit_remote_job
 from sva.memory.service import CorrectionSubmission, submit_correction
+from sva.points.dao import list_points
+from sva.points.service import PointBoundaryPatch, replace_point_boundaries
 from sva.queue import enqueue_job
+from sva.ingest.ingest import TRANSCODED_DIR
 
 try:
     from fastapi import FastAPI, File, Form, HTTPException, Response, UploadFile
+    from fastapi.responses import FileResponse
 except ModuleNotFoundError:  # pragma: no cover - depends on installed extras
     FastAPI = None  # type: ignore[assignment]
-    File = Form = Response = UploadFile = HTTPException = None  # type: ignore[assignment]
+    File = Form = Response = UploadFile = HTTPException = FileResponse = None  # type: ignore[assignment]
 
 
 UPLOAD_DIR = Path("data/uploads")
@@ -61,6 +69,29 @@ def _serialize_event_row(row: Any) -> EventResponse:
         confidence=confidence,
         warnings=list(row.warnings or []),
     )
+
+
+def _serialize_point_record(point: Any) -> PointBoundaryResponse:
+    return PointBoundaryResponse(
+        point_id=point.point_id,
+        point_ordinal=int(point.point_ordinal),
+        start_video_ts_ms=int(point.start_video_ts_ms),
+        end_video_ts_ms=int(point.end_video_ts_ms),
+        confidence=float(point.confidence),
+        boundary_evidence=list(point.boundary_evidence or []),
+    )
+
+
+def _video_path_for_job(job: Any) -> Path:
+    if job.video_id is not None:
+        transcoded = (TRANSCODED_DIR / f"{job.video_id}.mp4").resolve()
+        if transcoded.exists():
+            return transcoded
+    if job.source_path:
+        source = Path(job.source_path).resolve()
+        if source.exists():
+            return source
+    raise FileNotFoundError(f"No playable video found for game {job.game_id}")
 
 
 def create_app() -> Any:
@@ -150,6 +181,56 @@ def create_app() -> Any:
             game_id=game_id,
             events=[_serialize_event_row(row) for row in rows],
         ).model_dump()
+
+    @app.get("/games/{game_id}/points")
+    async def game_points_endpoint(game_id: str) -> dict[str, Any]:
+        job = get_job(game_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Unknown game: {game_id}")
+        return GamePointsResponse(
+            game_id=game_id,
+            points=[_serialize_point_record(point) for point in list_points(game_id)],
+        ).model_dump()
+
+    @app.put("/games/{game_id}/points")
+    async def update_points_endpoint(
+        game_id: str,
+        payload: PointBoundaryUpdateRequest,
+    ) -> dict[str, Any]:
+        job = get_job(game_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Unknown game: {game_id}")
+        try:
+            result = replace_point_boundaries(
+                game_id,
+                [
+                    PointBoundaryPatch(
+                        start_video_ts_ms=point.start_video_ts_ms,
+                        end_video_ts_ms=point.end_video_ts_ms,
+                    )
+                    for point in payload.points
+                ],
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return PointBoundaryUpdateResponse(
+            game_id=game_id,
+            points=[_serialize_point_record(point) for point in result.points],
+            events_rebucketed=result.events_rebucketed,
+            observations_rebucketed=result.observations_rebucketed,
+        ).model_dump()
+
+    @app.get("/games/{game_id}/video")
+    async def game_video_endpoint(game_id: str) -> Any:
+        job = get_job(game_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail=f"Unknown game: {game_id}")
+        try:
+            video_path = _video_path_for_job(job)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        media_type = "video/mp4" if video_path.suffix.lower() == ".mp4" else "application/octet-stream"
+        return FileResponse(video_path, media_type=media_type, filename=video_path.name)
 
     @app.post("/games/{game_id}/corrections", status_code=201)
     async def corrections_endpoint(

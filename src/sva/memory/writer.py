@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from sva.eval.gate import assert_memory_promotion_gate
+from sva.eval.harness import EvalReport
 from sva.models import CorrectionRecord, MemoryRecord, MemorySource
 
 
@@ -83,6 +85,8 @@ def promote_memory_record(
     corroborating_corrections: list[CorrectionRecord],
     *,
     builder_curated: bool,
+    baseline_eval_report: EvalReport,
+    candidate_eval_report: EvalReport,
     min_distinct_coaches: int = 2,
     created_at: datetime | None = None,
 ) -> MemoryRecord:
@@ -93,6 +97,7 @@ def promote_memory_record(
         min_distinct_coaches=min_distinct_coaches,
     ):
         raise ValueError("global promotion requires builder curation and corroboration from distinct coaches")
+    assert_memory_promotion_gate(baseline_eval_report, candidate_eval_report)
 
     distinct_coaches = sorted({correction.coach_id for correction in corroborating_corrections})
     return record.model_copy(
@@ -110,6 +115,7 @@ def promote_memory_record(
                 **record.payload,
                 "promoted_from_memory_id": record.memory_id,
                 "promoted_by_distinct_coaches": distinct_coaches,
+                "promotion_eval_dataset_id": candidate_eval_report.dataset_id,
             },
         }
     )
