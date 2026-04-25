@@ -124,7 +124,7 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 | 4. Interpretation & Event Taxonomy | 3/3 | Complete | 2026-04-24 |
 | 5. Memory & Correction Loop | 4/4 | Complete | 2026-04-24 |
 | 6. Async Orchestration & API | 4/4 | Complete | 2026-04-25 |
-| 7. Evaluation Harness & Alpha UI | 0/5 | Planned | - |
+| 7. Evaluation Harness & Alpha UI | 5/5 | Blocked (external gold set) | - |
 
 ## Coverage Summary
 
@@ -145,4 +145,4 @@ Non-negotiables honored: VFR→CFR transcode at ingest (Phase 1), per-window obs
 
 ---
 *Roadmap created: 2026-04-20*
-*Last updated: 2026-04-25 — Phase 7 planned; 07-01 eval harness and 07-03 point-boundary API are the first execution wave*
+*Last updated: 2026-04-25 — Phase 7 implementation is shipped (5/5 plans); alpha closeout remains blocked on the real gold set and independent annotator eval data*

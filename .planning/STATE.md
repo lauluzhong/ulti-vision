@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-last_updated: "2026-04-25T14:10:00.000Z"
+status: blocked
+last_updated: "2026-04-25T18:30:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 22
-  completed_plans: 22
+  total_plans: 27
+  completed_plans: 27
   percent: 100
 ---
 
@@ -22,15 +22,15 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Execute Phase 07 Wave 1 — Eval Harness Core (`07-01`)
+**Current Focus:** Close external Phase 7 blockers — real gold set and Docker-backed DB verification
 
 ## Current Position
 
 Phase: 07 (evaluation-harness-and-alpha-ui) — EXECUTING
-Plan: 0 of 5
+Plan: 5 of 5
 **Next Phase:** 7 (Evaluation Harness & Alpha UI)
-**Status:** Phase 7 planned
-**Progress:** Phase 7 executing, 0 of 5 plans complete
+**Status:** Phase 7 implementation complete; alpha closeout blocked externally
+**Progress:** Phase 7 implemented, 5 of 5 plans complete
 
 ```
 Roadmap  ████████████ 100%
@@ -40,7 +40,7 @@ Phase 3  ████████████ 100% ✓
 Phase 4  ████████████ 100% ✓
 Phase 5  ████████████ 100% ✓
 Phase 6  ████████████ 100% ✓
-Phase 7  ░░░░░░░░░░░░   0%
+Phase 7  ████████████ 100% ⚠
 ```
 
 ## Performance Metrics
@@ -50,7 +50,7 @@ Phase 7  ░░░░░░░░░░░░   0%
 | Requirements coverage | 45/45 | 45/45 |
 | Phases defined | 5-8 | 7 |
 | Phases complete | 7 | 6 |
-| Plans complete | 27 (Phases 1-7) | 22/27 |
+| Plans complete | 27 (Phases 1-7) | 27/27 |
 | Alpha gate: completion recall | ≥ 85% | — |
 | Alpha gate: completion precision | ≥ 70% | — |
 | Alpha gate: goals/possession recall | ≥ 95% | — |
@@ -76,15 +76,14 @@ Phase 7  ░░░░░░░░░░░░   0%
 
 ### Open Todos
 
-- [ ] Execute Phase 7 `07-01` (eval contracts, gold-set loader, and metrics harness)
-- [ ] Execute Phase 7 `07-03` (point-boundary API and rebucketing service)
 - [ ] [BLOCKER] Add the real gold set: at least 3 full games / ~40 points with builder + independent annotator labels and agreement notes
+- [ ] [BLOCKER] Run `sva eval run` against the real gold set and record the true alpha metrics / agreement report
 - [ ] [ADVISORY] Before broader end-to-end verification: commit real iPhone HEVC ~90s VFR fixture + groundtruth JSON at `tests/fixtures/iphone_hevc_vfr_90s.{mov,groundtruth.json}` to flip INGEST-04 from "harness-only" to "live" verification
-- [ ] [ADVISORY] Run full suite against Docker Postgres once (`docker compose up -d postgres && uv run pytest -q`) to flip the DB-gated skips to PASSED
+- [ ] [ADVISORY] Install Docker and run the DB-gated suite once (`docker compose up -d db && uv run pytest -q`) to flip the remaining Postgres checks to PASSED
 
 ### Blockers
 
-No coding blocker for the first wave. Final alpha closeout remains blocked on the real gold set and independent annotator data.
+No further coding blocker remains in the planned Phase 7 scope. Alpha closeout is still blocked on the real gold set / independent annotator data, and Docker is unavailable in this session for the DB-gated full-suite pass.
 
 ### Recent Decisions Log
 
@@ -116,10 +115,16 @@ No coding blocker for the first wave. Final alpha closeout remains blocked on th
 - 2026-04-25: Phase 6 `06-04` complete. `GET /exports/{game_id}.csv` now exposes a stable human-facing export contract, and crash-resume regression coverage proves completed windows are reused after durable cache writes instead of being re-invoked.
 - 2026-04-25: Phase 6 complete. All four async/API plans are shipped with verification.
 - 2026-04-25: Phase 7 planned. The phase is split into five plans: eval harness core, promotion regression gate, point-boundary backend/rebucketing, SvelteKit alpha scaffold, and final correction/boundary UI flows. The real gold set is kept as an explicit external blocker.
+- 2026-04-25: Phase 7 `07-01` complete. The repo now has validated gold-set contracts, point-aware per-event metrics, alpha-gate reporting, and `sva eval run` for honest blocked-state reporting.
+- 2026-04-25: Phase 7 `07-02` complete. Global memory promotion is now hard-gated by eval in code, blocking missing eligible gold sets and inclusive >=3-point recall regressions.
+- 2026-04-25: Phase 7 `07-03` complete. The API now exposes `GET/PUT /games/{game_id}/points`, and coach-edited boundaries rebucket stored events plus observations in one centralized service path.
+- 2026-04-25: Phase 7 `07-04` complete. The repo now has a SvelteKit 2 alpha UI workspace that can submit jobs, poll status, review the timeline, and show v1 game stats.
+- 2026-04-25: Phase 7 `07-05` complete. Coaches can submit corrections, edit point boundaries, and scrub an embedded video player to canonical event timestamps through the alpha room.
+- 2026-04-25: Phase 7 implementation complete. All five implementation plans are shipped, but alpha closeout remains externally blocked on the real gold set and independent annotator coverage.
 
 ## Session Continuity
 
-**Resume point:** Execute `07-01` (Eval Contracts, Gold-Set Loader, and Metrics Harness).
+**Resume point:** Supply the real gold set, run the eval harness against it, and (if Docker is available) run the DB-gated full suite.
 
 **Recent artifacts:**
 
@@ -182,6 +187,11 @@ No coding blocker for the first wave. Final alpha closeout remains blocked on th
 - `.planning/phases/06-async-orchestration-and-api/06-03-SUMMARY.md` — completed canonical events API and corrections submission
 - `.planning/phases/06-async-orchestration-and-api/06-04-PLAN.md` — CSV export and crash/resume verification
 - `.planning/phases/06-async-orchestration-and-api/06-04-SUMMARY.md` — completed CSV export and crash-resume verification
+- `.planning/phases/07-evaluation-harness-and-alpha-ui/07-01-SUMMARY.md` — completed eval contracts, gold-set loader, metrics harness, and CLI entrypoint
+- `.planning/phases/07-evaluation-harness-and-alpha-ui/07-02-SUMMARY.md` — completed memory-promotion regression gate
+- `.planning/phases/07-evaluation-harness-and-alpha-ui/07-03-SUMMARY.md` — completed point-boundary API and rebucketing service
+- `.planning/phases/07-evaluation-harness-and-alpha-ui/07-04-SUMMARY.md` — completed SvelteKit alpha UI scaffold
+- `.planning/phases/07-evaluation-harness-and-alpha-ui/07-05-SUMMARY.md` — completed correction UI, point-boundary editor, and embedded video scrubber
 
 ---
 *State initialized: 2026-04-20 after roadmap creation*
@@ -211,3 +221,8 @@ No coding blocker for the first wave. Final alpha closeout remains blocked on th
 *Phase 6 plan 06-03 complete: 2026-04-25*
 *Phase 6 plan 06-04 complete: 2026-04-25*
 *Phase 6 complete: 2026-04-25*
+*Phase 7 plan 07-01 complete: 2026-04-25*
+*Phase 7 plan 07-02 complete: 2026-04-25*
+*Phase 7 plan 07-03 complete: 2026-04-25*
+*Phase 7 plan 07-04 complete: 2026-04-25*
+*Phase 7 plan 07-05 complete: 2026-04-25*
