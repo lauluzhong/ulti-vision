@@ -45,11 +45,11 @@ def test_insert_and_filter_memory_records(migrated_db):
             MemoryRecord(
                 memory_id="mem_phase5_rule",
                 kind="rule",
-                tags=["turnover", "usau"],
+                tags=["turnover", "wfdf"],
                 scope="global",
                 source=MemorySource(origin="seed"),
-                embedding_input="USAU turnover rule",
-                payload={"rule_ref": "USAU-13"},
+                embedding_input="WFDF turnover rule",
+                payload={"rule_ref": "WFDF-13.2"},
                 created_at=datetime.now(timezone.utc),
             ),
             MemoryRecord(
@@ -69,7 +69,7 @@ def test_insert_and_filter_memory_records(migrated_db):
     global_rules = list_memory_records(scopes=["global"], kinds=["rule"])
     assert len(global_rules) == 1
     assert global_rules[0].memory_id == "mem_phase5_rule"
-    assert global_rules[0].payload["rule_ref"] == "USAU-13"
+    assert global_rules[0].payload["rule_ref"] == "WFDF-13.2"
 
     tagged = list_memory_records(scopes=["coach:coach_1"], tag="sideline")
     assert len(tagged) == 1

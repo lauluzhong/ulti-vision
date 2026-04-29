@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from sva.models import Event
 
-RULEBOOK_PATH = Path(__file__).resolve().parents[3] / "rulebook" / "usau_2024_2025.yaml"
+RULEBOOK_PATH = Path(__file__).resolve().parents[3] / "rulebook" / "wfdf_2025.yaml"
 
 
 class RuleEntry(BaseModel):
@@ -63,7 +63,7 @@ def validate_event(event: Event, timeline: list[Event]) -> ValidationResult:
             issues.append(
                 ValidationIssue(
                     severity="hard",
-                    rule_ref="USAU-XIV",
+                    rule_ref="WFDF-13.7",
                     message="point_end requires a goal immediately before it in the validated timeline",
                 )
             )
@@ -71,7 +71,7 @@ def validate_event(event: Event, timeline: list[Event]) -> ValidationResult:
             issues.append(
                 ValidationIssue(
                     severity="hard",
-                    rule_ref="USAU-XIV",
+                    rule_ref="WFDF-13.7",
                     message="point_end team must match the team on the immediately preceding goal",
                 )
             )
@@ -81,7 +81,7 @@ def validate_event(event: Event, timeline: list[Event]) -> ValidationResult:
             issues.append(
                 ValidationIssue(
                     severity="warn",
-                    rule_ref="USAU-8.3",
+                    rule_ref="WFDF-13.1",
                     message="goal should name the scoring team when evidence is sufficient",
                 )
             )
@@ -90,7 +90,7 @@ def validate_event(event: Event, timeline: list[Event]) -> ValidationResult:
                 issues.append(
                     ValidationIssue(
                         severity="hard",
-                        rule_ref="USAU-8.3",
+                        rule_ref="WFDF-13.1",
                         message="goal team contradicts the active possessing team in the timeline",
                     )
                 )
@@ -101,7 +101,7 @@ def validate_event(event: Event, timeline: list[Event]) -> ValidationResult:
                 issues.append(
                     ValidationIssue(
                         severity="hard",
-                        rule_ref="USAU-13",
+                        rule_ref="WFDF-13.2",
                         message="possession cannot flip teams without an intervening turnover or goal",
                     )
                 )

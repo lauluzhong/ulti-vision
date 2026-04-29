@@ -17,10 +17,13 @@ REQUIRED_ENV = {
 
 
 def _reload_config():
-    """Force re-import of sva.config so Settings re-reads os.environ."""
-    for mod in ("sva.config", "sva"):
-        if mod in sys.modules:
-            del sys.modules[mod]
+    """Force re-import of sva.config so Settings re-reads os.environ.
+
+    Only evict sva.config (not the parent sva package) to avoid breaking
+    the submodule namespace for monkeypatch targets in later test files.
+    """
+    if "sva.config" in sys.modules:
+        del sys.modules["sva.config"]
     return importlib.import_module("sva.config")
 
 
@@ -50,8 +53,7 @@ def test_settings_raise_on_missing_key(monkeypatch):
         monkeypatch.delenv(k, raising=False)
     monkeypatch.chdir("/tmp")
     # sva.config eager-loads settings on import; missing keys must raise ValidationError.
-    for mod in ("sva.config", "sva"):
-        if mod in sys.modules:
-            del sys.modules[mod]
+    if "sva.config" in sys.modules:
+        del sys.modules["sva.config"]
     with pytest.raises(ValidationError):
         importlib.import_module("sva.config")

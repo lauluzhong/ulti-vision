@@ -132,11 +132,11 @@ def test_claude_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
                 text=(
                     '[{"event_id":"evt_1","game_id":"game_x","point_id":"game_x:pt_001","point_ordinal":1,'
                     '"video_ts_ms":1000,"in_point_ts_ms":1000,"type":"completion","team":"dark",'
-                    '"source_observations":["obs_win_1"],"rule_refs":["USAU-3"],"memory_refs":[],'
+                    '"source_observations":["obs_win_1"],"rule_refs":["WFDF-12.1"],"memory_refs":[],'
                     '"confidence":0.8,"warnings":[],"model":{"provider":"anthropic","model_id":"ignored","version":"ignored"}},'
                     '{"event_id":"evt_2","game_id":"game_x","point_id":"game_x:pt_001","point_ordinal":1,'
                     '"video_ts_ms":1500,"in_point_ts_ms":1500,"type":"turnover","team":"light",'
-                    '"source_observations":["obs_win_2"],"rule_refs":["USAU-13"],"memory_refs":[],'
+                    '"source_observations":["obs_win_2"],"rule_refs":["WFDF-13.2"],"memory_refs":[],'
                     '"confidence":0.6,"warnings":[],"model":{"provider":"anthropic","model_id":"ignored","version":"ignored"}}]'
                 ),
             )
@@ -181,7 +181,7 @@ def test_claude_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
     assert events[0].prompt_version_hash is not None
     assert events[0].model.model_id == "claude-sonnet-4-5"
     assert events[0].memory_refs == ["mem_turnover_hint"]
-    assert events[1].rule_refs == ["USAU-13"]
+    assert events[1].rule_refs == ["WFDF-13.2"]
 
 
 def test_claude_interpreter_raises_on_invalid_structured_output(monkeypatch):

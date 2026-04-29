@@ -95,7 +95,7 @@ def test_event_explicit_audit_fields_and_best_effort_details_round_trip():
         pass_direction="lateral",
         prompt_version_hash="abc123def456",
         source_observations=["obs_1", "obs_2"],
-        rule_refs=["USAU-12", "USAU-13"],
+        rule_refs=["WFDF-12.1", "WFDF-13.2"],
         memory_refs=["mem_1"],
         warnings=["best-effort"],
         model=ModelMetadata(provider="anthropic", model_id="claude-sonnet-4-5", version="v1"),
@@ -106,7 +106,7 @@ def test_event_explicit_audit_fields_and_best_effort_details_round_trip():
     assert rehydrated.throw_type == "backhand"
     assert rehydrated.pass_direction == "lateral"
     assert rehydrated.prompt_version_hash == "abc123def456"
-    assert rehydrated.rule_refs == ["USAU-12", "USAU-13"]
+    assert rehydrated.rule_refs == ["WFDF-12.1", "WFDF-13.2"]
 
 
 def test_memory_record_defaults_are_safe():

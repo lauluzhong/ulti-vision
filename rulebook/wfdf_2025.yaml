@@ -1,0 +1,48 @@
+{
+  "ruleset_id": "wfdf_2025",
+  "ruleset_name": "WFDF Rules of Ultimate 2025",
+  "rules": [
+    {
+      "ref": "WFDF-13.1",
+      "category": "goal",
+      "summary": "A goal is scored when an offensive player catches a legal pass and all of their first points of contact with the ground after gaining possession of the disc are completely within their attacking end zone.",
+      "hard": true
+    },
+    {
+      "ref": "WFDF-13.2",
+      "category": "turnover",
+      "summary": "A turnover transfers possession of the disc from the offense to the defense; common causes include throwaway, drop, defensive block (D), interception, stalled, or going out of bounds.",
+      "hard": true
+    },
+    {
+      "ref": "WFDF-12.1",
+      "category": "possession",
+      "summary": "A player is in possession of the disc when they have sustained contact with, and control of, a non-spinning disc. Possession persists until a turnover or goal changes the state.",
+      "hard": true
+    },
+    {
+      "ref": "WFDF-13.7",
+      "category": "point_end",
+      "summary": "A point ends when a goal is scored. Teams switch direction of attack and the team that just scored becomes defense for the next point, beginning with a pull.",
+      "hard": true
+    },
+    {
+      "ref": "WFDF-10",
+      "category": "pull",
+      "summary": "Each point begins with a pull — the defense throws the disc to the offense from their goal line. Both teams must remain behind their respective goal lines until the disc is released.",
+      "hard": true
+    },
+    {
+      "ref": "WFDF-1",
+      "category": "spirit",
+      "summary": "Ultimate is self-officiated. Calls are made by the players involved; this matters for interpretation because hand-signals from players (not officials) communicate game state on most footage.",
+      "hard": false
+    },
+    {
+      "ref": "WFDF-BEST-EFFORT",
+      "category": "classification",
+      "summary": "Throw type, pass direction, and turnover subtype are best-effort and should degrade to 'unknown' when evidence is insufficient. Better to mark unknown than fabricate.",
+      "hard": false
+    }
+  ]
+}

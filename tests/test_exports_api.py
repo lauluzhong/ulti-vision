@@ -62,7 +62,7 @@ def _event(
         details={"source": "canonical"},
         schema_version="1.0",
         source_observations=["obs_hidden"],
-        rule_refs=["USAU-1"],
+        rule_refs=["WFDF-1"],
         memory_refs=["mem_hidden"],
         confidence=0.91,
         warnings=[],

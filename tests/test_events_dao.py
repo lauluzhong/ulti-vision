@@ -62,7 +62,7 @@ def test_insert_event_persists_point_scope_and_widened_audit_fields(migrated_db)
             throw_type="backhand",
             pass_direction="lateral",
             prompt_version_hash="abc123def456",
-            rule_refs=["USAU-3"],
+            rule_refs=["WFDF-12.1"],
             warnings=["best-effort"],
             model=ModelMetadata(provider="dummy", model_id="dummy-llm", version="test"),
             ),
@@ -78,7 +78,7 @@ def test_insert_event_persists_point_scope_and_widened_audit_fields(migrated_db)
                 throw_type="forehand",
                 pass_direction="up-field",
                 prompt_version_hash="abc123def456",
-                rule_refs=["USAU-8.3"],
+                rule_refs=["WFDF-13.1"],
                 model=ModelMetadata(provider="dummy", model_id="dummy-llm", version="test"),
             ),
             Event(
@@ -92,7 +92,7 @@ def test_insert_event_persists_point_scope_and_widened_audit_fields(migrated_db)
             team="light",
             turnover_subtype="block",
             prompt_version_hash="def456abc123",
-            rule_refs=["USAU-13"],
+            rule_refs=["WFDF-13.2"],
             model=ModelMetadata(provider="dummy", model_id="dummy-llm", version="test"),
             ),
         ]
@@ -138,12 +138,12 @@ def test_insert_event_persists_point_scope_and_widened_audit_fields(migrated_db)
     assert rows[0].throw_type == "backhand"
     assert rows[0].pass_direction == "lateral"
     assert rows[0].prompt_version_hash == "abc123def456"
-    assert rows[0].rule_refs == ["USAU-3"]
+    assert rows[0].rule_refs == ["WFDF-12.1"]
     assert rows[0].warnings == ["best-effort"]
     assert turnover_row is not None
     assert turnover_row.turnover_subtype == "block"
     assert turnover_row.prompt_version_hash == "def456abc123"
-    assert turnover_row.rule_refs == ["USAU-13"]
+    assert turnover_row.rule_refs == ["WFDF-13.2"]
 
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM events WHERE game_id = :g"), {"g": game_id})

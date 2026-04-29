@@ -27,6 +27,7 @@ from sva.memory.service import CorrectionSubmission, submit_correction
 from sva.points.dao import list_points
 from sva.points.service import PointBoundaryPatch, replace_point_boundaries
 from sva.queue import enqueue_job
+from sva.config import settings
 from sva.ingest.ingest import TRANSCODED_DIR
 
 try:

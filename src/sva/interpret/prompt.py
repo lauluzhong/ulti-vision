@@ -12,7 +12,7 @@ _SYSTEM_PROMPT = """You are an Ultimate Frisbee interpretation engine.
 Convert point-scoped observations into canonical event rows.
 
 Rules:
-- Use the supplied USAU rule summary as the source of rule truth.
+- Use the supplied WFDF rule summary as the source of rule truth.
 - Emit only canonical events supported by the schema.
 - Keep turnover subtype, throw type, and pass direction as best-effort fields.
 - When evidence is insufficient, set those fields to "unknown" instead of guessing.
@@ -28,7 +28,7 @@ def build_interpret_prompt(
     observation_block = json.dumps([obs.model_dump(mode="json") for obs in observations], indent=2, sort_keys=True)
     memory_block = json.dumps([memory.model_dump(mode="json") for memory in retrieved], indent=2, sort_keys=True)
     user_prompt = (
-        "USAU rules summary:\n"
+        "WFDF rules summary:\n"
         f"{rules_summary()}\n\n"
         "Retrieved memory records:\n"
         f"{memory_block}\n\n"
