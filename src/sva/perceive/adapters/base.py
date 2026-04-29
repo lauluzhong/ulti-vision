@@ -6,7 +6,7 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from sva.models import Observation
+from sva.models import MemoryRecord, Observation
 from sva.observability import TraceContext
 
 
@@ -22,9 +22,18 @@ class PerceiveWindow(BaseModel):
 
 
 class Perceiver(Protocol):
-    """VLM adapter contract. Implementations live under sva.perceive.adapters.*."""
+    """VLM adapter contract. Implementations live under sva.perceive.adapters.*.
 
-    def perceive(self, ctx: TraceContext, window: PerceiveWindow) -> Observation: ...
+    `retrieved` is optional perceive-relevant memory (Phase 5+). Adapters that
+    don't yet wire memory in (test stubs, legacy implementations) may ignore it.
+    """
+
+    def perceive(
+        self,
+        ctx: TraceContext,
+        window: PerceiveWindow,
+        retrieved: list[MemoryRecord] | None = None,
+    ) -> Observation: ...
 
 
 __all__ = ["Perceiver", "PerceiveWindow"]

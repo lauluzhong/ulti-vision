@@ -1,8 +1,8 @@
 """Gemini 2.5 Flash VLM adapter.
 
-Phase 1 scope: emit a minimal Observation and exercise the Langfuse trace + cost path.
-Phase 3 replaces the stubbed body with real `google.genai` File API calls + structured output.
-The public contract (Perceiver Protocol) does not change between phases.
+Calls the real Gemini File API with structured output keyed to the canonical
+Observation schema. The prompt content lives in sva.perceive.prompt so any
+VLM swap (Qwen2-VL, GPT-4V, etc.) reuses it without copy-paste.
 """
 
 from __future__ import annotations
@@ -20,34 +20,17 @@ try:
 except ImportError:  # pragma: no cover - missing dependency in some dev envs
     genai = None  # type: ignore[assignment]
 
-from sva.models import (
-    ModelMetadata,
-    Observation,
-)
+from sva.config import settings
+from sva.models import MemoryRecord, ModelMetadata, Observation
 from sva.observability import TraceContext, observe_call, prompt_version_hash
 from sva.observability.cost import estimate_gemini_cost
 from sva.perceive.adapters.base import PerceiveWindow
-from sva.config import settings
+from sva.perceive.prompt import build_perceive_prompt
 
 _MODEL_ID = "gemini-2.5-flash"
-_VERSION = "phase3-native-v1"
+_VERSION = "v0-ultimate-aware-v1"
 _MAX_RETRIES = 3
 _BASE_BACKOFF_S = 0.25
-_PROMPT_TEMPLATE = """Analyze this Ultimate Frisbee video window and return exactly one canonical Observation.
-
-Rules:
-- Return only facts supported by the visible clip.
-- Use structured uncertainty when the disc is hard to see.
-- Set scene.multiple_discs_possible=true if an off-field or ambiguous disc-like object could confuse interpretation.
-- Do not invent player identities.
-- Keep free_form_note brief and factual.
-
-Window metadata:
-- window_id: {window_id}
-- video_id: {video_id}
-- video_ts_start_ms: {video_ts_start_ms}
-- video_ts_end_ms: {video_ts_end_ms}
-"""
 
 
 def _get_client():
@@ -56,13 +39,13 @@ def _get_client():
     return genai.Client(api_key=settings.gemini_api_key.get_secret_value())
 
 
-def _build_prompt(window: PerceiveWindow) -> str:
-    return _PROMPT_TEMPLATE.format(
-        window_id=window.window_id,
-        video_id=window.video_id,
-        video_ts_start_ms=window.video_ts_start_ms,
-        video_ts_end_ms=window.video_ts_end_ms,
-    )
+def _full_prompt_text(
+    window: PerceiveWindow,
+    retrieved: list[MemoryRecord] | None,
+) -> str:
+    """Concatenated system+user prompt — used as the cache identity input."""
+    system_prompt, user_prompt = build_perceive_prompt(window, retrieved=retrieved)
+    return f"{system_prompt}\n\n{user_prompt}"
 
 
 def _guess_mime_type(path: str) -> str:
@@ -125,11 +108,12 @@ def _parse_observation(response, window: PerceiveWindow, uploaded_file_name: str
 def _call_gemini(
     ctx: TraceContext,
     window: PerceiveWindow,
+    retrieved: list[MemoryRecord] | None = None,
 ) -> tuple[Observation, Decimal, int, int, TraceContext]:
     """Run one real Gemini perception call with bounded retry behavior."""
     client = _get_client()
-    prompt = _build_prompt(window)
-    prompt_hash = prompt_version_hash(prompt)
+    system_prompt, user_prompt = build_perceive_prompt(window, retrieved=retrieved)
+    prompt_hash = prompt_version_hash(f"{system_prompt}\n\n{user_prompt}")
     started = time.monotonic()
     retry_count = 0
     uploaded = None
@@ -146,8 +130,9 @@ def _call_gemini(
                 )
             response = client.models.generate_content(
                 model=_MODEL_ID,
-                contents=[uploaded, prompt],
+                contents=[uploaded, user_prompt],
                 config=genai.types.GenerateContentConfig(
+                    system_instruction=system_prompt,
                     response_mime_type="application/json",
                     response_schema=Observation,
                     temperature=0,
@@ -200,11 +185,20 @@ class GeminiPerceiver:
     model_id: str = _MODEL_ID
     provider: str = "gemini"
 
-    def prompt_hash_for(self, window: PerceiveWindow) -> str:
-        return prompt_version_hash(_build_prompt(window))
+    def prompt_hash_for(
+        self,
+        window: PerceiveWindow,
+        retrieved: list[MemoryRecord] | None = None,
+    ) -> str:
+        return prompt_version_hash(_full_prompt_text(window, retrieved))
 
-    def perceive(self, ctx: TraceContext, window: PerceiveWindow) -> Observation:
-        prompt_hash = self.prompt_hash_for(window)
+    def perceive(
+        self,
+        ctx: TraceContext,
+        window: PerceiveWindow,
+        retrieved: list[MemoryRecord] | None = None,
+    ) -> Observation:
+        prompt_hash = self.prompt_hash_for(window, retrieved)
         enriched = TraceContext(
             stage="perceive",
             model=_MODEL_ID,
@@ -215,7 +209,7 @@ class GeminiPerceiver:
             point_ordinal=ctx.point_ordinal,
             prompt_version_hash=prompt_hash,
         )
-        return _call_gemini(enriched, window)
+        return _call_gemini(enriched, window, retrieved)
 
 
 __all__ = ["GeminiPerceiver"]
