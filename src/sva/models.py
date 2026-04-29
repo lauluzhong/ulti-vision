@@ -37,6 +37,32 @@ TurnoverSubtype = Literal["throwaway", "drop", "block", "out_of_bounds", "unknow
 ThrowType = Literal["forehand", "backhand", "hammer", "blade", "unknown"]
 PassDirection = Literal["up-field", "down-field", "lateral", "unknown"]
 
+# v0 point-detection enums — VLM populates these so the heuristic point detector
+# can find pull formations and score signals without re-running the LLM.
+GamePhase = Literal[
+    "pre_pull",        # 7 defenders lined on endzone, offense lined on opposite endzone, awaiting release
+    "pull_in_air",     # disc has been pulled, both lines in motion
+    "live_play",       # standard offense vs defense, possession contested or held
+    "score_celebration",  # offense in attacking endzone, possible score signal from sideline
+    "between_points",  # players walking back to lines, no active play
+    "stoppage",        # discussion / call / timeout
+    "unknown",
+]
+ScoreSignal = Literal[
+    "two_hands_up",    # WFDF-style "goal scored" signal — straight arms overhead
+    "scoreboard_change",  # OCR detected a tick on the scoreboard since last window
+    "none",
+    "unknown",
+]
+ScoringDirection = Literal[
+    "screen_left",     # offense attacking left edge of frame
+    "screen_right",    # offense attacking right edge of frame
+    "screen_far",      # attacking the back of the frame (camera behind defense)
+    "screen_near",     # attacking the front of the frame (camera behind offense)
+    "unclear",
+    "unknown",
+]
+
 
 class ModelMetadata(BaseModel):
     """Provider-neutral model identifier attached to every VLM/LLM output."""
@@ -84,6 +110,44 @@ class TextObserved(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
 
 
+class FormationObservation(BaseModel):
+    """Ultimate-specific formation cues used by the point detector.
+
+    v0 contract: capture only what's visible in the window. Default to unknown when
+    the VLM can't tell (don't fabricate). The point detector reads these to find
+    point boundaries WITHOUT having to re-prompt the LLM.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    phase: GamePhase = "unknown"
+    phase_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+    pull_formation_visible: bool = False
+    """True if 7 defenders are visibly lined up on one endzone awaiting the pull release."""
+    arms_raised_count: int = Field(ge=0, default=0)
+    """Count of distinct people in frame with both arms raised straight overhead.
+    A goal signal in WFDF is two straight arms up; multiple people often signal together
+    after a score. The LLM can use the count + phase to infer scoring."""
+    score_signal: ScoreSignal = "none"
+    score_signal_confidence: float = Field(ge=0.0, le=1.0, default=0.0)
+
+
+class FieldOrientation(BaseModel):
+    """Where the field is in the frame and which way the offense is attacking.
+
+    v0 contract: VLM reports best-effort. The pipeline gates 'pass_direction'
+    on this being known so we don't fabricate up-field/down-field.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    scoring_direction: ScoringDirection = "unknown"
+    """Direction the team in possession is attacking, relative to camera frame."""
+    endzone_visible: Literal["near", "far", "both", "neither", "unknown"] = "unknown"
+    """Whether an endzone line is visible in this window — needed to confirm goals."""
+    centerline_x_norm: float | None = Field(default=None, ge=0.0, le=1.0)
+    """Approximate x-coordinate (0=left edge, 1=right edge) of the disc's current
+    field-x position, when derivable from visible field lines. None if unclear."""
+
+
 class Observation(BaseModel):
     """VLM-produced structured observation for one sampled window. Swap-safe by construction."""
 
@@ -100,6 +164,10 @@ class Observation(BaseModel):
     players: PlayerCounts = Field(default_factory=PlayerCounts)
     actions_detected: list[ActionTag] = Field(default_factory=list)
     text_observed: list[TextObserved] = Field(default_factory=list)
+    formation: FormationObservation = Field(default_factory=FormationObservation)
+    """v0: Ultimate-specific formation cues. Drives the heuristic point detector."""
+    field_orientation: FieldOrientation = Field(default_factory=FieldOrientation)
+    """v0: where the field is in frame, which way offense is attacking. Gates pass_direction."""
     free_form_note: str = ""
     model: ModelMetadata
     confidence_overall: float = Field(ge=0.0, le=1.0)
@@ -192,6 +260,8 @@ __all__ = [
     "PlayerCounts",
     "ActionTag",
     "TextObserved",
+    "FormationObservation",
+    "FieldOrientation",
     "MemorySource",
     "EventType",
     "Team",
@@ -200,4 +270,7 @@ __all__ = [
     "TurnoverSubtype",
     "ThrowType",
     "PassDirection",
+    "GamePhase",
+    "ScoreSignal",
+    "ScoringDirection",
 ]
