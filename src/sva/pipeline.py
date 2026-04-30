@@ -1,7 +1,12 @@
-"""Narrow vertical slice end-to-end orchestrator.
+"""End-to-end pipeline orchestrator.
 
-Flows: ingest_clip -> per-window perceive -> interpret -> events.
-This is Phase 1 scope only. Phase 6 replaces this with a Dramatiq durable workflow.
+v0 flow: ingest -> perceive every window -> detect points from observations
+-> interpret per point -> persist events.
+
+Critical change from prior bootstrap: point detection now runs AFTER perception,
+using VLM-observed game phase signals (pre_pull / live_play / score_celebration /
+between_points) to find real point boundaries. The old whole-game-as-one-point
+bootstrap is gone.
 """
 
 from __future__ import annotations
@@ -21,10 +26,10 @@ from sva.ingest import IngestResult, ingest_clip
 from sva.ingest.sampler import make_window_id
 from sva.interpret import make_default_interpreter, run_point
 from sva.memory import MemoryRetriever, RetrievalQuery
-from sva.models import Event, Observation
+from sva.models import Event, MemoryRecord, Observation
 from sva.observability import TraceContext
 from sva.perceive import PerceiveWindow, insert_observations, make_default_perceiver, run_window
-from sva.points import BoundarySignal, PointBoundaryCandidate, PointRecord, detect_points
+from sva.points import PointRecord, detect_points_from_observations
 from sva.points.dao import insert_points, list_points
 
 logger = logging.getLogger(__name__)
@@ -59,30 +64,6 @@ def _mark_job_complete(game_id: str) -> None:
         )
 
 
-def _build_point_boundary_candidates(ing: IngestResult) -> list[PointBoundaryCandidate]:
-    if not ing.windows:
-        return []
-
-    start_ms = ing.windows[0][0]
-    end_ms = ing.windows[-1][1]
-
-    # Bootstrap a single deterministic candidate until the full OCR/pull candidate
-    # extractor lands; Phase 02-03's contract is that downstream work uses persisted
-    # point rows as the authoritative grouping primitive.
-    return [
-        PointBoundaryCandidate(
-            start_video_ts_ms=start_ms,
-            end_video_ts_ms=end_ms,
-            pull=BoundarySignal(
-                source="pull",
-                video_ts_ms=start_ms,
-                confidence=1.0,
-                details={"mode": "phase2_bootstrap_whole_game_point"},
-            ),
-        )
-    ]
-
-
 def _resolve_window_point(points: list[PointRecord], start_ms: int, end_ms: int) -> PointRecord | None:
     midpoint_ms = (start_ms + end_ms) // 2
     for point in points:
@@ -106,13 +87,37 @@ def _apply_point_scope(event: Event, point: PointRecord, fallback_ts_ms: int) ->
     )
 
 
+def _retrieve_perceive_memory(
+    retriever: MemoryRetriever,
+    game_id: str,
+) -> list[MemoryRecord]:
+    """Pull general perception-relevant memory before VLM calls.
+
+    For v0, retrieve memories tagged 'perceive' or coach-scoped general guidance
+    (no event-type filter — we don't yet know what events the window contains).
+    Empty list when memory is empty (cold start).
+    """
+    try:
+        return asyncio.run(
+            retriever.retrieve(
+                RetrievalQuery(
+                    event_candidate_type="unknown",
+                    context_text="perceive perception vlm",
+                )
+            )
+        )
+    except Exception as exc:  # pragma: no cover - retrieval is non-fatal
+        logger.warning("perceive memory retrieval failed (non-fatal): %s", exc)
+        return []
+
+
 def run_pipeline(
     source_path: Path | str,
     game_id: str | None = None,
     *,
     target_fps: int = 1,
 ) -> PipelineResult:
-    """Run one clip through the Phase 1 narrow vertical slice."""
+    """Run one clip end-to-end: ingest -> perceive -> detect points -> interpret."""
     ing = ingest_clip(source_path, game_id=game_id, target_fps=target_fps)
     logger.info("Ingested %s -> %s (game_id=%s)", ing.source_path, ing.transcoded_path, ing.game_id)
 
@@ -120,27 +125,16 @@ def run_pipeline(
     interpreter = make_default_interpreter()
     retriever = MemoryRetriever()
 
-    base_ctx = TraceContext(
-        stage="pipeline",
-        model="pipeline",
-        video_id=ing.video_id,
-        game_id=ing.game_id,
-    )
-    _ = base_ctx  # retained for future use; per-call contexts below supersede
-
-    point_candidates = _build_point_boundary_candidates(ing)
-    points = detect_points(ing.game_id, point_candidates)
-    if points:
-        insert_points(points)
-    persisted_points = list_points(ing.game_id)
-
+    # Stage 1: perceive every window. No point context yet — point detection
+    # consumes the VLM's structured output to find real boundaries.
+    perceive_memory = _retrieve_perceive_memory(retriever, ing.game_id)
     observations: list[Observation] = []
-    observations_by_point: dict[str, list[Observation]] = defaultdict(list)
-    points_by_id = {point.point_id: point for point in persisted_points}
+    fresh_persists: list[tuple[Observation, str]] = []  # (observation, prompt_hash) for cache misses
+
+    def _record_cache_miss(observation: Observation, prompt_hash: str) -> None:
+        fresh_persists.append((observation, prompt_hash))
+
     for start_ms, end_ms in ing.windows:
-        owning_point = _resolve_window_point(persisted_points, start_ms, end_ms)
-        if owning_point is None:
-            continue
         window = PerceiveWindow(
             window_id=make_window_id(
                 video_id=ing.video_id,
@@ -159,26 +153,52 @@ def run_pipeline(
             video_id=ing.video_id,
             game_id=ing.game_id,
             window_id=window.window_id,
-            point_id=owning_point.point_id,
-            point_ordinal=owning_point.point_ordinal,
         )
         try:
             obs = run_window(
                 window_ctx,
                 window,
                 perceiver=perceiver,
-                on_cache_miss=lambda observation, prompt_hash, point=owning_point: insert_observations(
-                    game_id=ing.game_id,
-                    point_id=point.point_id,
-                    point_ordinal=point.point_ordinal,
-                    prompt_version_hash=prompt_hash,
-                    observations=[observation],
-                ),
+                retrieved=perceive_memory,
+                on_cache_miss=_record_cache_miss,
             )
             observations.append(obs)
-            observations_by_point[owning_point.point_id].append(obs)
         except Exception as exc:
             logger.exception("perceive failed for window %s: %s", window.window_id, exc)
+
+    # Stage 2: detect points from VLM observations.
+    points = detect_points_from_observations(ing.game_id, observations)
+    if points:
+        insert_points(points)
+    persisted_points = list_points(ing.game_id)
+    points_by_id = {point.point_id: point for point in persisted_points}
+
+    # Stage 3: persist cache-miss observations now that we know their owning points.
+    for observation, prompt_hash in fresh_persists:
+        owning = _resolve_window_point(
+            persisted_points, observation.video_ts_start_ms, observation.video_ts_end_ms
+        )
+        if owning is None:
+            continue
+        try:
+            insert_observations(
+                game_id=ing.game_id,
+                point_id=owning.point_id,
+                point_ordinal=owning.point_ordinal,
+                prompt_version_hash=prompt_hash,
+                observations=[observation],
+            )
+        except Exception as exc:
+            logger.warning("observation persist failed for %s: %s", observation.window_id, exc)
+
+    # Stage 4: group observations by owning point and interpret each point.
+    observations_by_point: dict[str, list[Observation]] = defaultdict(list)
+    for obs in observations:
+        owning = _resolve_window_point(
+            persisted_points, obs.video_ts_start_ms, obs.video_ts_end_ms
+        )
+        if owning is not None:
+            observations_by_point[owning.point_id].append(obs)
 
     events_inserted = 0
     for point_id, point_observations in observations_by_point.items():
@@ -213,7 +233,6 @@ def run_pipeline(
         events_inserted += len(scoped_events)
 
     total_cost = _read_total_cost(ing.game_id)
-
     _mark_job_complete(ing.game_id)
 
     return PipelineResult(

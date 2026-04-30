@@ -6,7 +6,7 @@ import logging
 from collections.abc import Callable
 from dataclasses import replace
 
-from sva.models import Observation
+from sva.models import MemoryRecord, Observation
 from sva.observability import TraceContext, get_langfuse
 from sva.observations_dao import list_cached_observations
 from sva.perceive.adapters.base import Perceiver, PerceiveWindow
@@ -24,10 +24,19 @@ def make_default_perceiver() -> Perceiver:
     return GeminiPerceiver()
 
 
-def _prompt_hash_for_window(perceiver: Perceiver, window: PerceiveWindow) -> str | None:
+def _prompt_hash_for_window(
+    perceiver: Perceiver,
+    window: PerceiveWindow,
+    retrieved: list[MemoryRecord] | None = None,
+) -> str | None:
     prompt_hash_for = getattr(perceiver, "prompt_hash_for", None)
     if callable(prompt_hash_for):
-        return prompt_hash_for(window)
+        # Adapters that haven't yet adopted the retrieved-memory parameter still
+        # work; we try the new signature first, fall back to legacy on TypeError.
+        try:
+            return prompt_hash_for(window, retrieved)
+        except TypeError:
+            return prompt_hash_for(window)
     return None
 
 
@@ -70,11 +79,18 @@ def run_window(
     ctx: TraceContext,
     window: PerceiveWindow,
     perceiver: Perceiver | None = None,
+    *,
+    retrieved: list[MemoryRecord] | None = None,
     on_cache_miss: CacheMissHandler | None = None,
 ) -> Observation:
-    """Run a single window through the perception layer."""
+    """Run a single window through the perception layer.
+
+    `retrieved` is optional perceive-relevant memory (Phase 5+). When supplied,
+    it gets folded into the prompt and into the cache identity so a memory
+    update cleanly invalidates the prior cached observation.
+    """
     p = perceiver or make_default_perceiver()
-    prompt_hash = _prompt_hash_for_window(p, window)
+    prompt_hash = _prompt_hash_for_window(p, window, retrieved)
     effective_ctx = ctx
     if prompt_hash is not None:
         effective_ctx = replace(ctx, prompt_version_hash=prompt_hash)
@@ -87,7 +103,12 @@ def run_window(
             _emit_cache_hit_trace(effective_ctx)
             return cached[0]
 
-    observation = p.perceive(effective_ctx, window)
+    # Adapters that don't yet accept `retrieved` still work via TypeError fallback.
+    try:
+        observation = p.perceive(effective_ctx, window, retrieved)
+    except TypeError:
+        observation = p.perceive(effective_ctx, window)
+
     if prompt_hash is not None and on_cache_miss is not None:
         on_cache_miss(observation, prompt_hash)
     return observation

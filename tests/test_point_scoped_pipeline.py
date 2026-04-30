@@ -1,4 +1,8 @@
-"""Unit tests for point-aware pipeline orchestration."""
+"""Unit tests for point-aware pipeline orchestration.
+
+v0 flow under test: ingest -> perceive every window -> detect points from
+observations -> persist observations + points -> interpret per point.
+"""
 
 from __future__ import annotations
 
@@ -7,11 +11,11 @@ from types import SimpleNamespace
 
 from sva.ingest.ingest import IngestResult
 from sva.models import ModelMetadata, Observation
-from sva.points.types import BoundarySignal, PointBoundaryCandidate, PointRecord
+from sva.points.types import BoundarySignal, PointRecord
 
 
-def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped_events(monkeypatch):
-    from sva.models import DiscObservation, Event, PlayerCounts, SceneObservation
+def test_run_pipeline_perceives_then_detects_points_then_interprets(monkeypatch):
+    from sva.models import DiscObservation, Event, FormationObservation, PlayerCounts, SceneObservation
     from sva.pipeline import run_pipeline
 
     order: list[str] = []
@@ -35,7 +39,7 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
             start_video_ts_ms=1501,
             end_video_ts_ms=4000,
             confidence=0.9,
-            boundary_evidence=[BoundarySignal(source="scoreboard", video_ts_ms=1600, confidence=0.9)],
+            boundary_evidence=[BoundarySignal(source="vlm", video_ts_ms=1600, confidence=0.9)],
         ),
     ]
 
@@ -53,18 +57,9 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
             transcoded_metadata=SimpleNamespace(duration_s=4.0),
         )
 
-    def fake_build_candidates(ing):
-        return [
-            PointBoundaryCandidate(
-                start_video_ts_ms=0,
-                end_video_ts_ms=4000,
-                pull=BoundarySignal(source="pull", video_ts_ms=0, confidence=1.0),
-            )
-        ]
-
-    def fake_detect_points(game_id, candidates):
+    def fake_detect_points_from_observations(game_id, observations):
         order.append("detect")
-        assert candidates
+        assert observations  # must be called AFTER perceive supplied them
         return points
 
     def fake_insert_points(detected_points):
@@ -82,24 +77,25 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
     class DummyPerceiver:
         model_id = "dummy-vlm"
 
-        def prompt_hash_for(self, window):
+        def prompt_hash_for(self, window, retrieved=None):
             return f"hash:{window.window_id}"
 
-        def perceive(self, ctx, window):
+        def perceive(self, ctx, window, retrieved=None):
             perceive_calls["count"] += 1
-            order.append(f"perceive:{ctx.point_id}")
+            order.append(f"perceive:{window.window_id}")
             return Observation(
-            observation_id=f"obs_{window.window_id}",
-            window_id=window.window_id,
-            video_id=window.video_id,
-            video_ts_start_ms=window.video_ts_start_ms,
-            video_ts_end_ms=window.video_ts_end_ms,
-            observation_ts_ms=(window.video_ts_start_ms + window.video_ts_end_ms) // 2,
-            scene=SceneObservation(),
-            disc=DiscObservation(),
-            players=PlayerCounts(),
-            model=ModelMetadata(provider="dummy", model_id="dummy-vlm", version="test"),
-            confidence_overall=0.5,
+                observation_id=f"obs_{window.window_id}",
+                window_id=window.window_id,
+                video_id=window.video_id,
+                video_ts_start_ms=window.video_ts_start_ms,
+                video_ts_end_ms=window.video_ts_end_ms,
+                observation_ts_ms=(window.video_ts_start_ms + window.video_ts_end_ms) // 2,
+                scene=SceneObservation(),
+                disc=DiscObservation(),
+                players=PlayerCounts(),
+                formation=FormationObservation(phase="live_play", phase_confidence=0.8),
+                model=ModelMetadata(provider="dummy", model_id="dummy-vlm", version="test"),
+                confidence_overall=0.5,
             )
 
     def fake_insert_observations(*, game_id, point_id, point_ordinal, prompt_version_hash, observations, cache_hit=False):
@@ -150,8 +146,7 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
             inserted_events.append(event)
 
     monkeypatch.setattr("sva.pipeline.ingest_clip", fake_ingest_clip)
-    monkeypatch.setattr("sva.pipeline._build_point_boundary_candidates", fake_build_candidates)
-    monkeypatch.setattr("sva.pipeline.detect_points", fake_detect_points)
+    monkeypatch.setattr("sva.pipeline.detect_points_from_observations", fake_detect_points_from_observations)
     monkeypatch.setattr("sva.pipeline.insert_points", fake_insert_points)
     monkeypatch.setattr("sva.pipeline.list_points", fake_list_points)
     monkeypatch.setattr("sva.pipeline.MemoryRetriever", DummyRetriever)
@@ -173,17 +168,28 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
     result = run_pipeline("tests/fixtures/cfr_baseline.mp4", game_id="game_test")
     second_result = run_pipeline("tests/fixtures/cfr_baseline.mp4", game_id="game_test")
 
+    # Both runs produce the same canonical events.
     assert result.events_inserted == 3
     assert result.observations == 2
     assert second_result.events_inserted == 3
     assert second_result.observations == 2
-    assert order.index("detect") < order.index("perceive:game_test:pt_001")
-    assert order.index("detect") < order.index("perceive:game_test:pt_002")
+
+    # New flow ordering: perceive happens BEFORE detect, detect happens before interpret.
+    first_perceive_idx = next(i for i, ev in enumerate(order) if ev.startswith("perceive:"))
+    detect_idx = order.index("detect")
+    assert first_perceive_idx < detect_idx, "perception must run before point detection"
+    assert detect_idx < order.index("interpret:game_test:pt_001")
+    assert detect_idx < order.index("interpret:game_test:pt_002")
+
+    # Cache-miss observations get persisted with their owning point_id after detection.
     assert order.index("persist_observation:game_test:pt_001") < order.index("interpret:game_test:pt_001")
-    assert order.index("persist_observation:game_test:pt_002") < order.index("interpret:game_test:pt_002")
+
+    # Each interpret call emits its events before moving to the next point.
     assert order.index("interpret:game_test:pt_001") < order.index("persist_event:evt_game_test_pt_001_completion")
     assert order.index("persist_event:evt_game_test_pt_001_completion") < order.index("persist_event:evt_game_test_pt_001_turnover")
     assert order.index("interpret:game_test:pt_002") < order.index("persist_event:evt_game_test_pt_002_goal")
+
+    # Both runs flow through the same shape (cache hits on the second run avoid re-perceiving).
     assert [event.point_id for event in inserted_events] == [
         "game_test:pt_001",
         "game_test:pt_001",
@@ -202,4 +208,5 @@ def test_run_pipeline_detects_points_before_perception_and_persists_point_scoped
     ]
     assert [event.point_ordinal for event in inserted_events] == [1, 1, 2, 1, 1, 2]
     assert [event.in_point_ts_ms for event in inserted_events] == [500, 700, 999, 500, 700, 999]
+    # First run: 2 fresh perceptions. Second run: cache hit (no fresh perceiver invocations).
     assert perceive_calls["count"] == 2

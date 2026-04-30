@@ -67,8 +67,11 @@ def test_submit_local_job_creates_queued_job(monkeypatch, tmp_path):
 
 
 def test_process_job_skips_points_with_existing_events_and_completes_remaining_work(monkeypatch):
+    """v0 flow: every window is perceived first, then points are detected from
+    observations, then any point whose events already exist is skipped at the
+    interpret stage (resume safety)."""
     from sva.jobs_service import process_job
-    from sva.models import DiscObservation, Event, PlayerCounts, SceneObservation
+    from sva.models import DiscObservation, Event, FormationObservation, PlayerCounts, SceneObservation
     from sva.ingest.ingest import IngestResult
 
     initial_job = _job_record()
@@ -108,7 +111,7 @@ def test_process_job_skips_points_with_existing_events_and_completes_remaining_w
             start_video_ts_ms=1001,
             end_video_ts_ms=2000,
             confidence=0.9,
-            boundary_evidence=[BoundarySignal(source="scoreboard", video_ts_ms=1200, confidence=0.9)],
+            boundary_evidence=[BoundarySignal(source="vlm", video_ts_ms=1200, confidence=0.9)],
         ),
     ]
 
@@ -130,8 +133,12 @@ def test_process_job_skips_points_with_existing_events_and_completes_remaining_w
     monkeypatch.setattr("sva.jobs_service.upsert_job", fake_upsert_job)
     monkeypatch.setattr("sva.jobs_service.ingest_local_file", lambda *args, **kwargs: ingested)
     monkeypatch.setattr("sva.jobs_service.list_points", lambda game_id: list(points_state))
-    monkeypatch.setattr("sva.jobs_service.detect_points", lambda game_id, candidates: points)
+    monkeypatch.setattr(
+        "sva.jobs_service.detect_points_from_observations",
+        lambda game_id, observations: points,
+    )
     monkeypatch.setattr("sva.jobs_service.insert_points", lambda rows: points_state.extend(rows))
+    # pt_001 already has events from a prior run -> skip re-interpret.
     monkeypatch.setattr(
         "sva.jobs_service.list_event_rows_for_point",
         lambda game_id, point_id: [object()] if point_id.endswith("pt_001") else [],
@@ -147,9 +154,10 @@ def test_process_job_skips_points_with_existing_events_and_completes_remaining_w
     monkeypatch.setattr("sva.jobs_service.MemoryRetriever", DummyRetriever)
     monkeypatch.setattr("sva.jobs_service.make_default_perceiver", lambda: DummyPerceiver())
     monkeypatch.setattr("sva.jobs_service.make_default_interpreter", lambda: SimpleNamespace(model_id="dummy-llm"))
+    monkeypatch.setattr("sva.jobs_service._retrieve_perceive_memory", lambda retriever, game_id: [])
 
-    def fake_run_window(ctx, window, perceiver=None, on_cache_miss=None):
-        _ = perceiver
+    def fake_run_window(ctx, window, perceiver=None, *, retrieved=None, on_cache_miss=None):
+        _ = perceiver, retrieved
         run_window_calls.append(window.window_id)
         observation = Observation(
             observation_id=f"obs_{window.window_id}",
@@ -161,6 +169,7 @@ def test_process_job_skips_points_with_existing_events_and_completes_remaining_w
             scene=SceneObservation(),
             disc=DiscObservation(),
             players=PlayerCounts(),
+            formation=FormationObservation(phase="live_play", phase_confidence=0.7),
             model=ModelMetadata(provider="dummy", model_id="dummy-vlm", version="test"),
             confidence_overall=0.5,
         )
@@ -183,7 +192,7 @@ def test_process_job_skips_points_with_existing_events_and_completes_remaining_w
                 in_point_ts_ms=0,
                 type="goal",
                 team="dark",
-                model=ModelMetadata(provider="dummy", model_id="dummy-llm", version="test"),
+                model=ModelMetadata(provider="dummy", model_id="dummy-vlm", version="test"),
             )
         ]
 
@@ -195,19 +204,23 @@ def test_process_job_skips_points_with_existing_events_and_completes_remaining_w
 
     result = process_job("game_async_001")
 
-    assert run_window_calls == ["win_vid_async_001_1fps_1001_2000"]
+    # New flow: every window is perceived (point boundaries unknown until detection).
+    assert run_window_calls == [
+        "win_vid_async_001_1fps_0_1000",
+        "win_vid_async_001_1fps_1001_2000",
+    ]
+    # pt_001 already had events -> skipped at interpret. Only pt_002 produces a new event.
     assert inserted_events == ["evt_game_async_001:pt_002_goal"]
     assert result.events_inserted == 1
     assert result.total_cost_usd == Decimal("1.23")
-    assert [stage for _, stage, _ in stage_updates] == [
-        "ingest",
-        "point_detect",
-        "persist",
-        "perceive",
-        "interpret",
-        "persist",
-        "complete",
-    ]
+    # Stage sequence reflects the new flow: ingest -> perceive -> point_detect -> interpret/persist -> complete.
+    stages_only = [stage for _, stage, _ in stage_updates]
+    assert stages_only[0] == "ingest"
+    assert "perceive" in stages_only
+    assert "point_detect" in stages_only
+    assert stages_only[-1] == "complete"
+    # Specifically: perceive comes before point_detect.
+    assert stages_only.index("perceive") < stages_only.index("point_detect")
     final_progress = stage_updates[-1][2]
     assert final_progress["points_completed"] == 2
     assert final_progress["windows_completed"] == 2
