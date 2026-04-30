@@ -21,11 +21,14 @@ def upgrade() -> None:
     op.add_column("events", sa.Column("point_ordinal", sa.Integer(), nullable=True))
     op.add_column("events", sa.Column("in_point_ts_ms", sa.BigInteger(), nullable=True))
 
+    # Backfill any pre-existing events with a default point. The ':' character
+    # is doubled-escaped in SQLAlchemy's text() bind-parameter parser; we use
+    # CHR(58) to sidestep that parsing entirely.
     op.execute(
         """
         UPDATE events
         SET
-            point_id = COALESCE(point_id, game_id || ':pt_001'),
+            point_id = COALESCE(point_id, game_id || CHR(58) || 'pt_001'),
             point_ordinal = COALESCE(point_ordinal, 1),
             in_point_ts_ms = COALESCE(in_point_ts_ms, video_ts_ms)
         """

@@ -33,6 +33,26 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def _ensure_alembic_version_table_supports_long_ids(connection) -> None:
+    """Pre-create alembic_version with a wider column.
+
+    Our revision IDs (e.g. '0002_phase2_sources_and_rights_acks') exceed
+    Alembic's default version_num varchar(32). Pre-creating the table with
+    varchar(255) sidesteps the limit. CREATE IF NOT EXISTS makes this a no-op
+    on subsequent runs.
+    """
+    from sqlalchemy import text as sa_text
+
+    connection.execute(
+        sa_text(
+            "CREATE TABLE IF NOT EXISTS alembic_version ("
+            "version_num varchar(255) NOT NULL, "
+            "CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)"
+            ")"
+        )
+    )
+
+
 def run_migrations_online() -> None:
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
@@ -40,6 +60,8 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
+        _ensure_alembic_version_table_supports_long_ids(connection)
+        connection.commit()
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
             context.run_migrations()
