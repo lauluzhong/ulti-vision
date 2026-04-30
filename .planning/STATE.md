@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: blocked
-last_updated: "2026-04-25T18:30:00.000Z"
+status: v0-alpha-ready
+last_updated: "2026-04-30T18:00:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 27
   completed_plans: 27
   percent: 100
@@ -14,7 +14,7 @@ progress:
 
 # Project State
 
-**Last updated:** 2026-04-25
+**Last updated:** 2026-04-30
 
 ## Project Reference
 
@@ -22,7 +22,9 @@ progress:
 
 **Core Value:** Turn existing, inconsistent-quality Ultimate Frisbee footage into a reliable per-point event timeline — without requiring the coach to watch the game.
 
-**Current Focus:** Close external Phase 7 blockers — real gold set and Docker-backed DB verification
+**Current Focus:** v0 alpha — user smoke-tests prompts on real footage, then deploys to Render+Vercel and trickles URL to first coaches.
+
+**Reference doc for next steps:** `V0-DELIVERY.md` at repo root.
 
 ## Current Position
 
@@ -121,6 +123,17 @@ No further coding blocker remains in the planned Phase 7 scope. Alpha closeout i
 - 2026-04-25: Phase 7 `07-04` complete. The repo now has a SvelteKit 2 alpha UI workspace that can submit jobs, poll status, review the timeline, and show v1 game stats.
 - 2026-04-25: Phase 7 `07-05` complete. Coaches can submit corrections, edit point boundaries, and scrub an embedded video player to canonical event timestamps through the alpha room.
 - 2026-04-25: Phase 7 implementation complete. All five implementation plans are shipped, but alpha closeout remains externally blocked on the real gold set and independent annotator coverage.
+- 2026-04-30: **v0 push** — 6 commits on top of Phase 7 to make the alpha actually meaningful.
+  - WFDF rules now in place (was incorrectly USAU); rule data + all rule_refs swapped.
+  - Observation schema extended with FormationObservation (phase/pull_formation/score_signal/arms_raised) and FieldOrientation (scoring_direction/endzone_visible/centerline) — additive, no DB migration needed.
+  - VLM prompt rewritten for Ultimate-specific extraction (game structure, pull formation, hand signals, useful action tags, "never fabricate" rule).
+  - **Real point detector** replaces the bootstrap whole-game-as-one-point. New `detect_points_from_observations()` walks VLM observations, identifies in-point runs from formation.phase, anchors on pull formation + score signals, falls back to single "unclear" point when VLM gives no confident signals.
+  - Pipeline + jobs_service refactored: ingest → perceive → detect points from observations → interpret per point.
+  - LLM prompt rewritten for v0 honest-counts scope: goals + completions + turnovers + possession transitions; everything else degrades to unknown.
+  - Memory retrieval now wired into VLM prompt (perceive stage), not just LLM prompt — fixes the Claude/Gemini asymmetry.
+  - New `sva run-local` smoke CLI for end-to-end testing without Docker/API/queue/frontend.
+  - Bonus fixes: `sva.api.app` was crashing on startup (missing settings import); 17 tests were spuriously failing due to test isolation bug in `test_config.py::_reload_config()`.
+  - Tests: 101 passed, 19 skipped, 1 expected fail (iPhone HEVC fixture not yet provided).
 
 ## Session Continuity
 
