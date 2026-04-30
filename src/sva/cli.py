@@ -151,7 +151,8 @@ def run_local(
 
     Useful for testing prompt changes against a real clip without spinning up
     Docker, the API, the queue, or the frontend. Requires GEMINI_API_KEY,
-    ANTHROPIC_API_KEY, and a reachable Postgres (DATABASE_URL).
+    LANGFUSE_PUBLIC_KEY/LANGFUSE_SECRET_KEY (free tier), and a reachable
+    Postgres (DATABASE_URL). v0 uses Gemini 2.5 Flash for both VLM and LLM.
     """
     if url_mode:
         console.print(f"[bold]sva run-local[/bold] [URL mode] url={source} fps={fps}")

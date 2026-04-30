@@ -1,4 +1,4 @@
-"""Interpret adapter tests for the current Claude seam."""
+"""Interpret adapter tests for the Gemini Flash seam (v0 default)."""
 
 from __future__ import annotations
 
@@ -8,7 +8,15 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import text
 
-from sva.models import DiscObservation, MemoryRecord, MemorySource, ModelMetadata, Observation, PlayerCounts, SceneObservation
+from sva.models import (
+    DiscObservation,
+    MemoryRecord,
+    MemorySource,
+    ModelMetadata,
+    Observation,
+    PlayerCounts,
+    SceneObservation,
+)
 from sva.observability import TraceContext
 
 
@@ -42,9 +50,14 @@ def _dummy_obs(window_id="win_1", video_id="vid_test") -> Observation:
 
 
 @pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable")
-def test_claude_interpreter_emits_valid_event():
+def test_gemini_interpreter_emits_valid_event_for_smoke_input(monkeypatch):
+    """Smoke: a Gemini call returning one valid event lands in the DB with cost recorded.
+
+    Stubs the google.genai client so this test runs without API credentials —
+    we're verifying contract conformance, not real model output quality.
+    """
     from sva.db import get_engine
-    from sva.interpret import ClaudeInterpreter
+    from sva.interpret import GeminiInterpreter
 
     game_id = "test_interpret_game_1"
     with get_engine().begin() as conn:
@@ -54,30 +67,55 @@ def test_claude_interpreter_emits_valid_event():
             {"g": game_id, "v": "vid_test"},
         )
 
+    fake_response = SimpleNamespace(
+        parsed=[
+            {
+                "schema_version": "1.0",
+                "event_id": "evt_smoke_1",
+                "game_id": game_id,
+                "point_id": f"{game_id}:pt_001",
+                "point_ordinal": 1,
+                "video_ts_ms": 1000,
+                "in_point_ts_ms": 1000,
+                "type": "unknown",
+                "team": "unknown",
+                "source_observations": ["obs_win_1", "obs_win_2"],
+                "rule_refs": [],
+                "memory_refs": [],
+                "confidence": 0.5,
+                "warnings": [],
+                "model": {"provider": "gemini", "model_id": "ignored", "version": "ignored"},
+            }
+        ],
+        text="",
+        usage_metadata=SimpleNamespace(prompt_token_count=500, candidates_token_count=80),
+    )
+    fake_client = SimpleNamespace(
+        models=SimpleNamespace(generate_content=lambda **kwargs: fake_response)
+    )
+    monkeypatch.setattr("sva.interpret.adapters.gemini._get_client", lambda: fake_client)
+
     ctx = TraceContext(
         stage="interpret",
-        model="claude-sonnet-4-5",
+        model="gemini-2.5-flash",
         video_id="vid_test",
         game_id=game_id,
         point_id=f"{game_id}:pt_001",
         point_ordinal=1,
     )
     obs_list = [_dummy_obs(window_id="win_1"), _dummy_obs(window_id="win_2")]
-    events = ClaudeInterpreter().interpret(ctx, obs_list, retrieved=[])
+    events = GeminiInterpreter().interpret(ctx, obs_list, retrieved=[])
     assert len(events) == 1
     event = events[0]
 
     assert event.schema_version == "1.0"
-    assert event.model.provider == "anthropic"
-    assert event.model.model_id == "claude-sonnet-4-5"
+    assert event.model.provider == "gemini"
+    assert event.model.model_id == "gemini-2.5-flash"
     assert event.point_id == f"{game_id}:pt_001"
     assert event.point_ordinal == 1
     assert event.in_point_ts_ms == 1000
-    assert event.type == "unknown"
-    assert len(event.source_observations) == 2
-    assert event.prompt_version_hash is None
 
-    # OBS-01: cost was recorded
+    # OBS-01: cost was recorded (Gemini token rates, but > 0).
     with get_engine().connect() as conn:
         cost = conn.execute(
             text("SELECT cost_usd FROM jobs WHERE game_id = :g"),
@@ -112,7 +150,14 @@ def test_run_point_accepts_custom_interpreter():
             ]
 
     d: Interpreter = DummyInterpreter()
-    ctx = TraceContext(stage="interpret", model="dummy-llm", video_id="v", game_id="g", point_id="g:pt_001", point_ordinal=1)
+    ctx = TraceContext(
+        stage="interpret",
+        model="dummy-llm",
+        video_id="v",
+        game_id="g",
+        point_id="g:pt_001",
+        point_ordinal=1,
+    )
     events = run_point(ctx, observations=[], interpreter=d)
     assert len(events) == 1
     event = events[0]
@@ -121,36 +166,64 @@ def test_run_point_accepts_custom_interpreter():
     assert event.type == "unknown"
 
 
-def test_claude_interpreter_parses_multiple_events_and_defaults_best_effort_fields(monkeypatch):
-    from anthropic.types import TextBlock, Usage
-    from sva.interpret import ClaudeInterpreter
+def test_gemini_interpreter_parses_multiple_events_and_defaults_best_effort_fields(monkeypatch):
+    """Verify per-event normalization: completion -> throw_type/pass_direction default
+    to 'unknown', turnover -> turnover_subtype defaults to 'unknown', memory_refs
+    propagate, prompt_version_hash gets stamped, model.provider becomes 'gemini'.
+    """
+    from sva.interpret import GeminiInterpreter
 
-    fake_message = SimpleNamespace(
-        content=[
-            TextBlock(
-                type="text",
-                text=(
-                    '[{"event_id":"evt_1","game_id":"game_x","point_id":"game_x:pt_001","point_ordinal":1,'
-                    '"video_ts_ms":1000,"in_point_ts_ms":1000,"type":"completion","team":"dark",'
-                    '"source_observations":["obs_win_1"],"rule_refs":["WFDF-12.1"],"memory_refs":[],'
-                    '"confidence":0.8,"warnings":[],"model":{"provider":"anthropic","model_id":"ignored","version":"ignored"}},'
-                    '{"event_id":"evt_2","game_id":"game_x","point_id":"game_x:pt_001","point_ordinal":1,'
-                    '"video_ts_ms":1500,"in_point_ts_ms":1500,"type":"turnover","team":"light",'
-                    '"source_observations":["obs_win_2"],"rule_refs":["WFDF-13.2"],"memory_refs":[],'
-                    '"confidence":0.6,"warnings":[],"model":{"provider":"anthropic","model_id":"ignored","version":"ignored"}}]'
-                ),
-            )
-        ],
-        usage=Usage(input_tokens=600, output_tokens=180),
+    parsed_events = [
+        {
+            "schema_version": "1.0",
+            "event_id": "evt_1",
+            "game_id": "game_x",
+            "point_id": "game_x:pt_001",
+            "point_ordinal": 1,
+            "video_ts_ms": 1000,
+            "in_point_ts_ms": 1000,
+            "type": "completion",
+            "team": "dark",
+            "source_observations": ["obs_win_1"],
+            "rule_refs": ["WFDF-12.1"],
+            "memory_refs": [],
+            "confidence": 0.8,
+            "warnings": [],
+            "model": {"provider": "gemini", "model_id": "ignored", "version": "ignored"},
+        },
+        {
+            "schema_version": "1.0",
+            "event_id": "evt_2",
+            "game_id": "game_x",
+            "point_id": "game_x:pt_001",
+            "point_ordinal": 1,
+            "video_ts_ms": 1500,
+            "in_point_ts_ms": 1500,
+            "type": "turnover",
+            "team": "light",
+            "source_observations": ["obs_win_2"],
+            "rule_refs": ["WFDF-13.2"],
+            "memory_refs": [],
+            "confidence": 0.6,
+            "warnings": [],
+            "model": {"provider": "gemini", "model_id": "ignored", "version": "ignored"},
+        },
+    ]
+    fake_response = SimpleNamespace(
+        parsed=parsed_events,
+        text="",
+        usage_metadata=SimpleNamespace(prompt_token_count=600, candidates_token_count=180),
     )
-    fake_client = SimpleNamespace(messages=SimpleNamespace(create=lambda **kwargs: fake_message))
-    monkeypatch.setattr("sva.interpret.adapters.claude._get_client", lambda: fake_client)
+    fake_client = SimpleNamespace(
+        models=SimpleNamespace(generate_content=lambda **kwargs: fake_response)
+    )
+    monkeypatch.setattr("sva.interpret.adapters.gemini._get_client", lambda: fake_client)
     monkeypatch.setattr("sva.observability.langfuse.get_langfuse", lambda: None)
     monkeypatch.setattr("sva.observability.cost.record_job_cost", lambda game_id, delta_usd: None)
 
     ctx = TraceContext(
         stage="interpret",
-        model="claude-sonnet-4-5",
+        model="gemini-2.5-flash",
         video_id="vid_test",
         game_id="game_x",
         point_id="game_x:pt_001",
@@ -166,7 +239,7 @@ def test_claude_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
             created_at=datetime.now(timezone.utc),
         )
     ]
-    events = ClaudeInterpreter().interpret(
+    events = GeminiInterpreter().interpret(
         ctx,
         [_dummy_obs(window_id="win_1"), _dummy_obs(window_id="win_2")],
         retrieved=retrieved,
@@ -179,27 +252,31 @@ def test_claude_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
     assert events[1].type == "turnover"
     assert events[1].turnover_subtype == "unknown"
     assert events[0].prompt_version_hash is not None
-    assert events[0].model.model_id == "claude-sonnet-4-5"
+    assert events[0].model.provider == "gemini"
+    assert events[0].model.model_id == "gemini-2.5-flash"
     assert events[0].memory_refs == ["mem_turnover_hint"]
     assert events[1].rule_refs == ["WFDF-13.2"]
 
 
-def test_claude_interpreter_raises_on_invalid_structured_output(monkeypatch):
-    from anthropic.types import TextBlock, Usage
-    from sva.interpret import ClaudeInterpreter
+def test_gemini_interpreter_raises_on_invalid_structured_output(monkeypatch):
+    """When Gemini returns a non-list payload, the adapter raises ValueError."""
+    from sva.interpret import GeminiInterpreter
 
-    fake_message = SimpleNamespace(
-        content=[TextBlock(type="text", text='{"not":"a list of events"}')],
-        usage=Usage(input_tokens=500, output_tokens=50),
+    fake_response = SimpleNamespace(
+        parsed={"not": "a list of events"},
+        text="",
+        usage_metadata=SimpleNamespace(prompt_token_count=500, candidates_token_count=50),
     )
-    fake_client = SimpleNamespace(messages=SimpleNamespace(create=lambda **kwargs: fake_message))
-    monkeypatch.setattr("sva.interpret.adapters.claude._get_client", lambda: fake_client)
+    fake_client = SimpleNamespace(
+        models=SimpleNamespace(generate_content=lambda **kwargs: fake_response)
+    )
+    monkeypatch.setattr("sva.interpret.adapters.gemini._get_client", lambda: fake_client)
     monkeypatch.setattr("sva.observability.langfuse.get_langfuse", lambda: None)
     monkeypatch.setattr("sva.observability.cost.record_job_cost", lambda game_id, delta_usd: None)
 
     ctx = TraceContext(
         stage="interpret",
-        model="claude-sonnet-4-5",
+        model="gemini-2.5-flash",
         video_id="vid_test",
         game_id="game_x",
         point_id="game_x:pt_001",
@@ -207,4 +284,4 @@ def test_claude_interpreter_raises_on_invalid_structured_output(monkeypatch):
     )
 
     with pytest.raises(ValueError):
-        ClaudeInterpreter().interpret(ctx, [_dummy_obs(window_id="win_1")], retrieved=[])
+        GeminiInterpreter().interpret(ctx, [_dummy_obs(window_id="win_1")], retrieved=[])

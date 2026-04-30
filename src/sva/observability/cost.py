@@ -1,4 +1,10 @@
-"""Per-call cost estimator using published 2026-04 rates (see STACK.md)."""
+"""Per-call cost estimator using published 2026-04 rates (see STACK.md).
+
+v0: Gemini Flash powers both VLM (perceive) and LLM (interpret) so this
+module only needs Gemini rates. To add another provider (DeepSeek, GPT-4o-mini,
+Kimi K2, etc.), add a `_<PROVIDER>_RATES` table and an `estimate_<provider>_cost`
+function — same shape as below.
+"""
 
 from __future__ import annotations
 
@@ -22,19 +28,6 @@ _GEMINI_RATES = {
     },
 }
 
-_CLAUDE_RATES = {
-    "claude-sonnet-4-5": {
-        "input": Decimal("0.00000300"),         # $3 / 1M
-        "output": Decimal("0.00001500"),        # $15 / 1M
-        "cache_read": Decimal("0.00000030"),    # 0.1x input
-    },
-    "claude-opus-4-7": {
-        "input": Decimal("0.00000500"),
-        "output": Decimal("0.00002500"),
-        "cache_read": Decimal("0.00000050"),
-    },
-}
-
 
 def estimate_gemini_cost(
     input_tokens: int,
@@ -42,24 +35,8 @@ def estimate_gemini_cost(
     cached_input_tokens: int = 0,
     model: str = "gemini-2.5-flash",
 ) -> Decimal:
-    """Estimated USD cost for one Gemini call."""
+    """Estimated USD cost for one Gemini call (text or video, both stages)."""
     rates = _GEMINI_RATES.get(model, _GEMINI_RATES["gemini-2.5-flash"])
-    fresh_input = max(input_tokens - cached_input_tokens, 0)
-    return (
-        Decimal(fresh_input) * rates["input"]
-        + Decimal(cached_input_tokens) * rates["cache_read"]
-        + Decimal(output_tokens) * rates["output"]
-    )
-
-
-def estimate_claude_cost(
-    input_tokens: int,
-    output_tokens: int,
-    cached_input_tokens: int = 0,
-    model: str = "claude-sonnet-4-5",
-) -> Decimal:
-    """Estimated USD cost for one Claude call."""
-    rates = _CLAUDE_RATES.get(model, _CLAUDE_RATES["claude-sonnet-4-5"])
     fresh_input = max(input_tokens - cached_input_tokens, 0)
     return (
         Decimal(fresh_input) * rates["input"]
@@ -93,4 +70,4 @@ def record_job_cost(game_id: str, delta_usd: Decimal) -> None:
             )
 
 
-__all__ = ["estimate_gemini_cost", "estimate_claude_cost", "record_job_cost"]
+__all__ = ["estimate_gemini_cost", "record_job_cost"]

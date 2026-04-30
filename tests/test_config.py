@@ -9,7 +9,6 @@ from pydantic import ValidationError
 
 REQUIRED_ENV = {
     "GEMINI_API_KEY": "test-gemini",
-    "ANTHROPIC_API_KEY": "test-anthropic",
     "LANGFUSE_PUBLIC_KEY": "test-lf-pub",
     "LANGFUSE_SECRET_KEY": "test-lf-secret",
     "DATABASE_URL": "postgresql+psycopg://u:p@localhost:5432/test",

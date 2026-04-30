@@ -12,7 +12,6 @@ dependencies = [
   "pydantic-settings>=2.5",
   "pydantic-ai>=0.0.40",
   "google-genai>=0.3",
-  "anthropic>=0.40",
   "av>=13.0",
   "dramatiq>=1.18",
   "fastapi>=0.115",

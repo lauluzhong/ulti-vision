@@ -86,21 +86,21 @@ You're the only one who can do these. None require code changes from me.
 
 ### Before sending the URL to coaches: validate the pipeline produces useful output
 
-1. **Get API keys** (your accounts, your billing — you must not share these with me):
+1. **Get API keys** (your accounts, your billing — you must not share these with me).
+   v0 uses **Gemini 2.5 Flash for both VLM and LLM**, so only ONE LLM provider is needed.
    - Gemini: https://aistudio.google.com/apikey
-   - Anthropic: https://console.anthropic.com/settings/keys
    - Langfuse Cloud (free tier): https://cloud.langfuse.com → Settings → API Keys
 
 2. **Smoke-test locally first**:
    ```bash
    # Set up .env from .env.example with your real keys
    cp .env.example .env
-   # Edit .env, fill in GEMINI_API_KEY, ANTHROPIC_API_KEY, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY
+   # Edit .env, fill in GEMINI_API_KEY, LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY
    docker compose up -d db
    uv run alembic upgrade head
    uv run sva run-local <path-to-an-Ultimate-clip>
    ```
-   You'll need a Postgres on localhost:5432 (the `docker compose` brings one up). The CLI will run the clip through Gemini + Claude end-to-end, then print the three tables.
+   You'll need a Postgres on localhost:5432 (the `docker compose` brings one up). The CLI will run the clip through Gemini end-to-end (VLM observations + LLM interpretation), then print the three tables.
 
 3. **Look at the output and tell me what's wrong.** Specifically:
    - Are the detected points roughly right? (Right number of points? Reasonable boundaries?)
@@ -119,7 +119,6 @@ You're the only one who can do these. None require code changes from me.
    - "New +" → "Blueprint" → connect to `lauluzhong/ulti-vision`. Render reads `render.yaml` automatically and provisions Postgres + Redis + the Docker web service.
    - In the Render dashboard, set the env vars marked `sync: false` in `render.yaml`:
      - `GEMINI_API_KEY`
-     - `ANTHROPIC_API_KEY`
      - `LANGFUSE_PUBLIC_KEY`
      - `LANGFUSE_SECRET_KEY`
      - `CORS_ALLOW_ORIGINS=https://your-vercel-domain.vercel.app` (set this AFTER you know the Vercel domain — see step 6)

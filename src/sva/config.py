@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     """Required configuration for every Phase 1 entry point."""
 
     gemini_api_key: SecretStr = Field(..., alias="GEMINI_API_KEY")
-    anthropic_api_key: SecretStr = Field(..., alias="ANTHROPIC_API_KEY")
     langfuse_public_key: SecretStr = Field(..., alias="LANGFUSE_PUBLIC_KEY")
     langfuse_secret_key: SecretStr = Field(..., alias="LANGFUSE_SECRET_KEY")
     langfuse_host: str = Field(

@@ -33,14 +33,6 @@ def test_estimate_gemini_cost_matches_published_rates():
     assert cost_cached == Decimal("2.665")
 
 
-def test_estimate_claude_cost_matches_published_rates():
-    from sva.observability.cost import estimate_claude_cost
-
-    # 1M input + 1M output on claude-sonnet-4-5 = $3 + $15 = $18
-    cost = estimate_claude_cost(1_000_000, 1_000_000)
-    assert cost == Decimal("18")
-
-
 @pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable; start `docker compose up -d db`")
 def test_record_job_cost_aggregates_per_game():
     from sva.db import get_engine
