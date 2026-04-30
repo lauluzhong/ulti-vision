@@ -41,7 +41,56 @@ For point-boundary detection, the most useful signals you can capture are:
 - live_play: standard contested possession, players actively guarding/cutting
 """
 
-_USER_PROMPT_TEMPLATE = """Analyze this Ultimate Frisbee video window and return exactly one canonical Observation.
+_USER_PROMPT_TEMPLATE = """Analyze this Ultimate Frisbee video window and return exactly one canonical Observation as JSON.
+
+Return ONLY a single JSON object matching this exact shape (no prose, no markdown fences):
+
+{{
+  "schema_version": "1.0",
+  "observation_id": "obs_<short-uuid>",
+  "window_id": "{window_id}",
+  "video_id": "{video_id}",
+  "video_ts_start_ms": {video_ts_start_ms},
+  "video_ts_end_ms": {video_ts_end_ms},
+  "observation_ts_ms": <int, midpoint of window>,
+  "scene": {{
+    "field_visible": "full|partial|none",
+    "camera": "sideline|endzone|elevated|handheld|unknown",
+    "lighting": "ok|harsh|dim",
+    "obstruction": false,
+    "multiple_discs_possible": false
+  }},
+  "disc": {{
+    "visible": true,
+    "visibility_quality": "clear|blurry|likely_present_not_visible|absent",
+    "in_air": false,
+    "possessor_team": "dark|light|none|unknown",
+    "possessor_role": "thrower|receiver|defender|none"
+  }},
+  "players": {{
+    "dark_count_visible": 0,
+    "light_count_visible": 0
+  }},
+  "actions_detected": [{{"tag": "string", "confidence": 0.0}}],
+  "text_observed": [{{"text": "string", "kind": "scoreboard|jersey|other", "confidence": 0.0}}],
+  "formation": {{
+    "phase": "pre_pull|pull_in_air|live_play|score_celebration|between_points|stoppage|unknown",
+    "phase_confidence": 0.0,
+    "pull_formation_visible": false,
+    "arms_raised_count": 0,
+    "score_signal": "two_hands_up|scoreboard_change|none|unknown",
+    "score_signal_confidence": 0.0
+  }},
+  "field_orientation": {{
+    "scoring_direction": "screen_left|screen_right|screen_far|screen_near|unclear|unknown",
+    "endzone_visible": "near|far|both|neither|unknown",
+    "centerline_x_norm": null
+  }},
+  "free_form_note": "",
+  "model": {{"provider": "gemini", "model_id": "gemini-2.5-flash", "version": "v0"}},
+  "confidence_overall": 0.5,
+  "raw_response_ref": null
+}}
 
 Window metadata:
 - window_id: {window_id}

@@ -49,10 +49,36 @@ WFDF rules to honor:
 - Possession cannot flip teams without an intervening turnover or goal
   (WFDF-13.2/12.1).
 
-Return ONLY a JSON array of Event objects. No prose, no preamble.
+Return ONLY a JSON array of Event objects. No prose, no preamble, no markdown
+fences. Each Event must match this exact shape:
+
+{
+  "schema_version": "1.0",
+  "event_id": "evt_<short-uuid>",
+  "game_id": "<inherited from context — set to the game_id from the prompt context>",
+  "point_id": "<inherited from context>",
+  "point_ordinal": <int>,
+  "video_ts_ms": <int>,
+  "in_point_ts_ms": <int — relative to point start>,
+  "type": "possession_start|possession_end|completion|turnover|goal|point_end|unknown",
+  "team": "dark|light|none|unknown",
+  "player_id": null,
+  "turnover_subtype": "throwaway|drop|block|out_of_bounds|unknown" or null,
+  "throw_type": "forehand|backhand|hammer|blade|unknown" or null,
+  "pass_direction": "up-field|down-field|lateral|unknown" or null,
+  "prompt_version_hash": null,
+  "details": {},
+  "source_observations": ["obs_<id>", ...],
+  "rule_refs": ["WFDF-13.1", ...],
+  "memory_refs": [],
+  "confidence": 0.0,
+  "warnings": [],
+  "corrected_from_event_id": null,
+  "model": {"provider": "gemini", "model_id": "gemini-2.5-flash", "version": "v0"}
+}
 
 When you don't see any events for a point (e.g., the VLM observations are
-mostly "between_points" or "unknown"), return an empty array.
+mostly "between_points" or "unknown"), return an empty array [].
 
 Quality > recall: missing an event the VLM didn't clearly see is better
 than fabricating one. The system has a coach-correction loop that will

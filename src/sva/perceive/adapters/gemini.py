@@ -53,6 +53,40 @@ def _guess_mime_type(path: str) -> str:
     return guessed or "video/mp4"
 
 
+def _wait_for_file_active(client, uploaded, timeout_s: float = 60.0, poll_interval_s: float = 1.0) -> None:
+    """Block until Gemini's File API marks the upload as ACTIVE.
+
+    Video uploads start in PROCESSING state and transition to ACTIVE when ready.
+    Calling generate_content before ACTIVE returns 400 FAILED_PRECONDITION.
+    Raises RuntimeError if the file enters FAILED state or times out.
+    """
+    deadline = time.monotonic() + timeout_s
+    file_name = getattr(uploaded, "name", None)
+    if file_name is None:
+        return  # Nothing to poll; assume the SDK already returned a usable handle.
+
+    while True:
+        state = getattr(uploaded, "state", None)
+        # The SDK exposes state as either an enum (with .name) or a string.
+        state_str = getattr(state, "name", None) or str(state) if state is not None else "UNKNOWN"
+        if state_str == "ACTIVE":
+            return
+        if state_str == "FAILED":
+            raise RuntimeError(f"Gemini file upload entered FAILED state: {file_name}")
+        if time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"Gemini file upload did not reach ACTIVE within {timeout_s}s: "
+                f"name={file_name} state={state_str}"
+            )
+        time.sleep(poll_interval_s)
+        # Re-fetch state.
+        try:
+            uploaded = client.files.get(name=file_name)
+        except Exception:
+            # Transient error refreshing state — keep polling until deadline.
+            pass
+
+
 def _is_retryable_error(exc: Exception) -> bool:
     status_code = getattr(exc, "status_code", None)
     if status_code == 429:
@@ -71,9 +105,22 @@ def _usage_counts(response) -> tuple[int, int]:
 
 
 def _parse_observation(response, window: PerceiveWindow, uploaded_file_name: str | None) -> Observation:
+    """Parse a Gemini response into an Observation.
+
+    Tries `response.parsed` first (when response_schema was honored), then falls
+    back to `response.text` JSON. We don't pass response_schema directly because
+    the google-genai SDK's schema-conversion currently emits Pydantic-style
+    `additional_properties` that Gemini's REST API rejects (HTTP 400).
+    Validating manually with Pydantic post-receipt gives us the same safety.
+    """
+    import json
+
     parsed = getattr(response, "parsed", None)
     if parsed is None:
-        raise ValueError("Gemini response did not include parsed Observation output")
+        raw_text = getattr(response, "text", "") or ""
+        if not raw_text:
+            raise ValueError("Gemini response had no parsed payload and no text body")
+        parsed = json.loads(raw_text)
 
     if isinstance(parsed, Observation):
         observation = parsed
@@ -109,32 +156,56 @@ def _call_gemini(
     ctx: TraceContext,
     window: PerceiveWindow,
     retrieved: list[MemoryRecord] | None = None,
+    *,
+    uploaded: object,
 ) -> tuple[Observation, Decimal, int, int, TraceContext]:
-    """Run one real Gemini perception call with bounded retry behavior."""
+    """Run one Gemini perception call against a PRE-UPLOADED file with time slicing.
+
+    The upload is hoisted up to GeminiPerceiver._ensure_uploaded so the same
+    52MB clip isn't reuploaded once per window. Each call here only sends a
+    file reference + a video_metadata time slice, which costs ~26x fewer
+    video tokens (only the 2-second window's frames are billed).
+    """
     client = _get_client()
     system_prompt, user_prompt = build_perceive_prompt(window, retrieved=retrieved)
     prompt_hash = prompt_version_hash(f"{system_prompt}\n\n{user_prompt}")
     started = time.monotonic()
     retry_count = 0
-    uploaded = None
+
+    # Build the per-window content: file reference + video time slice + text prompt.
+    start_offset_s = window.video_ts_start_ms / 1000.0
+    end_offset_s = window.video_ts_end_ms / 1000.0
+    contents = [
+        genai.types.Content(
+            role="user",
+            parts=[
+                genai.types.Part(
+                    file_data=genai.types.FileData(
+                        file_uri=getattr(uploaded, "uri", None),
+                        mime_type=getattr(uploaded, "mime_type", None) or _guess_mime_type(window.transcoded_path),
+                    ),
+                    video_metadata=genai.types.VideoMetadata(
+                        start_offset=f"{start_offset_s:.2f}s",
+                        end_offset=f"{end_offset_s:.2f}s",
+                    ),
+                ),
+                genai.types.Part(text=user_prompt),
+            ],
+        ),
+    ]
 
     for attempt in range(_MAX_RETRIES + 1):
         try:
-            if uploaded is None:
-                uploaded = client.files.upload(
-                    file=Path(window.transcoded_path),
-                    config=genai.types.UploadFileConfig(
-                        displayName=window.window_id,
-                        mimeType=_guess_mime_type(window.transcoded_path),
-                    ),
-                )
             response = client.models.generate_content(
                 model=_MODEL_ID,
-                contents=[uploaded, user_prompt],
+                contents=contents,
                 config=genai.types.GenerateContentConfig(
                     system_instruction=system_prompt,
                     response_mime_type="application/json",
-                    response_schema=Observation,
+                    # Note: response_schema=Observation triggers an SDK bug
+                    # (google-genai 1.73 emits `additional_properties` that
+                    # Gemini's REST rejects). The system+user prompt describes
+                    # the Observation shape; we Pydantic-validate post-receipt.
                     temperature=0,
                 ),
             )
@@ -180,10 +251,47 @@ def _call_gemini(
 
 
 class GeminiPerceiver:
-    """Gemini 2.5 Flash perceiver using the swap-safe Observation contract."""
+    """Gemini 2.5 Flash perceiver using the swap-safe Observation contract.
+
+    Uploads each unique transcoded video to the Gemini File API ONCE per
+    perceiver instance, then reuses that file reference across every window's
+    perceive() call with a video_metadata time slice. This is dramatically
+    cheaper than re-uploading per window (52 windows × 52s clip = ~26x video
+    token savings) and faster (one ~5s upload instead of 52).
+    """
 
     model_id: str = _MODEL_ID
     provider: str = "gemini"
+
+    def __init__(self) -> None:
+        # Cache: transcoded_path -> uploaded file reference (kept ACTIVE).
+        # Lives on the perceiver instance so one pipeline run shares uploads
+        # across all its windows; multiple pipeline runs each create their
+        # own perceiver so caches don't leak across game_ids.
+        self._upload_cache: dict[str, object] = {}
+
+    def _ensure_uploaded(self, transcoded_path: str) -> object:
+        cached = self._upload_cache.get(transcoded_path)
+        if cached is not None:
+            return cached
+        client = _get_client()
+        uploaded = client.files.upload(
+            file=Path(transcoded_path),
+            config=genai.types.UploadFileConfig(
+                displayName=Path(transcoded_path).name,
+                mimeType=_guess_mime_type(transcoded_path),
+            ),
+        )
+        # Block until ACTIVE — generate_content fails 400 FAILED_PRECONDITION
+        # if called while the file is still PROCESSING.
+        _wait_for_file_active(client, uploaded)
+        # Refresh the handle once more so .uri / .state reflect ACTIVE.
+        try:
+            uploaded = client.files.get(name=getattr(uploaded, "name", None))
+        except Exception:
+            pass
+        self._upload_cache[transcoded_path] = uploaded
+        return uploaded
 
     def prompt_hash_for(
         self,
@@ -209,7 +317,8 @@ class GeminiPerceiver:
             point_ordinal=ctx.point_ordinal,
             prompt_version_hash=prompt_hash,
         )
-        return _call_gemini(enriched, window, retrieved)
+        uploaded = self._ensure_uploaded(window.transcoded_path)
+        return _call_gemini(enriched, window, retrieved, uploaded=uploaded)
 
 
 __all__ = ["GeminiPerceiver"]

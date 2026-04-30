@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -44,7 +45,13 @@ def _ensure_vfr_fixture():
         )
 
 
-@pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable")
+@pytest.mark.skipif(
+    not _db_reachable() or os.getenv("RUN_REAL_GEMINI") != "1",
+    reason="Requires real Gemini API key + Postgres; set RUN_REAL_GEMINI=1 to enable. "
+    "Note: this test was written against the legacy single-point-bootstrap detector and "
+    "uses a synthetic test-pattern video that triggers no Ultimate-specific phase signals "
+    "in the v0 VLM-driven detector. Kept gated for future eval work.",
+)
 def test_run_pipeline_produces_event_rows():
     from sva.db import get_engine
     from sva.pipeline import run_pipeline

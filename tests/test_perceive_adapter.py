@@ -20,7 +20,11 @@ def _db_reachable() -> bool:
 
 
 @pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable")
-def test_gemini_perceiver_emits_valid_observation():
+def test_gemini_perceiver_emits_valid_observation_with_db_cost(monkeypatch):
+    """Verify the GeminiPerceiver records cost into the jobs row with the
+    real Pydantic validation path. The Gemini API call itself is mocked —
+    this test does NOT require a real video or API key."""
+    from google.genai import types
     from sva.db import get_engine
     from sva.observability import TraceContext
     from sva.perceive import GeminiPerceiver, PerceiveWindow
@@ -32,6 +36,40 @@ def test_gemini_perceiver_emits_valid_observation():
             text("INSERT INTO jobs (game_id, video_id, status) VALUES (:g, :v, 'streaming')"),
             {"g": game_id, "v": "vid_test"},
         )
+
+    fake_observation_json = (
+        '{"schema_version":"1.0","observation_id":"obs_smoke_1","window_id":"win_1",'
+        '"video_id":"vid_test","video_ts_start_ms":0,"video_ts_end_ms":2000,'
+        '"observation_ts_ms":1000,"scene":{},"disc":{},"players":{},'
+        '"actions_detected":[],"text_observed":[],"free_form_note":"",'
+        '"model":{"provider":"gemini","model_id":"ignored","version":"ignored"},'
+        '"confidence_overall":0.5}'
+    )
+
+    class FakeFiles:
+        def upload(self, *, file, config):
+            return SimpleNamespace(name="files/uploaded-1", uri="gs://fake/video.mp4", state="ACTIVE", mime_type="video/mp4")
+
+        def get(self, *, name):
+            return SimpleNamespace(name=name, uri="gs://fake/video.mp4", state="ACTIVE", mime_type="video/mp4")
+
+    class FakeModels:
+        def generate_content(self, *, model, contents, config):
+            return SimpleNamespace(
+                model_version="gemini-2.5-flash-001",
+                response_id="resp_1",
+                text=fake_observation_json,
+                parsed=None,
+                usage_metadata=types.GenerateContentResponseUsageMetadata(
+                    prompt_token_count=200,
+                    candidates_token_count=40,
+                    total_token_count=240,
+                ),
+            )
+
+    fake_client = SimpleNamespace(files=FakeFiles(), models=FakeModels())
+    monkeypatch.setattr("sva.perceive.adapters.gemini._get_client", lambda: fake_client)
+    monkeypatch.setattr("sva.observability.langfuse.get_langfuse", lambda: None)
 
     window = PerceiveWindow(
         window_id="win_1",
@@ -49,7 +87,7 @@ def test_gemini_perceiver_emits_valid_observation():
     assert obs.window_id == "win_1"
     assert 0 <= obs.confidence_overall <= 1
 
-    # OBS-01: cost should have been recorded on the jobs row
+    # OBS-01: cost should have been recorded on the jobs row.
     with get_engine().connect() as conn:
         cost = conn.execute(
             text("SELECT cost_usd FROM jobs WHERE game_id = :g"),
@@ -69,15 +107,25 @@ def test_gemini_perceiver_populates_prompt_hash_and_ambiguity_fields(monkeypatch
 
     class FakeFiles:
         def upload(self, *, file, config):
-            return types.File(name="files/uploaded-1", uri="gs://fake/video.mp4")
+            return SimpleNamespace(
+                name="files/uploaded-1",
+                uri="gs://fake/video.mp4",
+                state="ACTIVE",
+                mime_type="video/mp4",
+            )
+
+        def get(self, *, name):
+            return SimpleNamespace(name=name, uri="gs://fake/video.mp4", state="ACTIVE", mime_type="video/mp4")
 
     class FakeModels:
         def generate_content(self, *, model, contents, config):
             assert model == "gemini-2.5-flash"
-            assert config.response_schema is not None
+            # New API: video_metadata time slice on a Content/Part with FileData,
+            # not response_schema (we removed it due to a google-genai 1.73 SDK bug).
             return SimpleNamespace(
                 model_version="gemini-2.5-flash-001",
                 response_id="resp_123",
+                text=None,  # parsed path takes precedence in the adapter
                 usage_metadata=types.GenerateContentResponseUsageMetadata(
                     prompt_token_count=321,
                     candidates_token_count=45,
@@ -154,7 +202,12 @@ def test_gemini_perceiver_retries_once_then_succeeds(monkeypatch):
 
     class FakeFiles:
         def upload(self, *, file, config):
-            return types.File(name="files/uploaded-2", uri="gs://fake/video.mp4")
+            return SimpleNamespace(
+                name="files/uploaded-2", uri="gs://fake/video.mp4", state="ACTIVE", mime_type="video/mp4"
+            )
+
+        def get(self, *, name):
+            return SimpleNamespace(name=name, uri="gs://fake/video.mp4", state="ACTIVE", mime_type="video/mp4")
 
     class FakeModels:
         def generate_content(self, *, model, contents, config):
@@ -218,7 +271,12 @@ def test_gemini_perceiver_raises_after_retry_exhaustion(monkeypatch):
 
     class FakeFiles:
         def upload(self, *, file, config):
-            return types.File(name="files/uploaded-3", uri="gs://fake/video.mp4")
+            return SimpleNamespace(
+                name="files/uploaded-3", uri="gs://fake/video.mp4", state="ACTIVE", mime_type="video/mp4"
+            )
+
+        def get(self, *, name):
+            return SimpleNamespace(name=name, uri="gs://fake/video.mp4", state="ACTIVE", mime_type="video/mp4")
 
     class FakeModels:
         def generate_content(self, *, model, contents, config):

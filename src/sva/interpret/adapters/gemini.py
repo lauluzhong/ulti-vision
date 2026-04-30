@@ -119,7 +119,10 @@ def _call_gemini_interpret(
             config=genai.types.GenerateContentConfig(
                 system_instruction=system_prompt,
                 response_mime_type="application/json",
-                response_schema=list[Event],
+                # Note: response_schema=list[Event] triggers an SDK bug
+                # (google-genai 1.73 emits `additional_properties` that
+                # Gemini's REST rejects). The prompt describes the Event[]
+                # shape; we Pydantic-validate post-receipt via _parse_events.
                 temperature=0,
             ),
         )
