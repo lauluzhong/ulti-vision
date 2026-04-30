@@ -26,7 +26,7 @@ from sva.interpret.prompt import build_interpret_prompt
 from sva.config import settings
 
 _MODEL_ID = "claude-sonnet-4-5"
-_VERSION = "phase4-native-v1"
+_VERSION = "v0-honest-counts-v1"
 _MAX_TOKENS = 1200
 
 _EVENTS_ADAPTER = TypeAdapter(list[Event])
