@@ -12,7 +12,6 @@ from sva.points.types import BoundarySignal, PointRecord
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-
 def _job() -> JobRecord:
     from datetime import datetime, timezone
     from decimal import Decimal
@@ -33,7 +32,6 @@ def _job() -> JobRecord:
         updated_at=datetime.now(timezone.utc),
     )
 
-
 def _point(point_id: str, ordinal: int, start_ms: int, end_ms: int) -> PointRecord:
     return PointRecord(
         point_id=point_id,
@@ -46,7 +44,6 @@ def _point(point_id: str, ordinal: int, start_ms: int, end_ms: int) -> PointReco
             BoundarySignal(source="manual", video_ts_ms=start_ms, confidence=1.0),
         ],
     )
-
 
 def test_points_api_lists_current_boundaries(monkeypatch):
     from sva.api.app import create_app
@@ -102,7 +99,6 @@ def test_points_api_lists_current_boundaries(monkeypatch):
         ],
     }
 
-
 def test_points_api_updates_boundaries_and_reports_rebucket_counts(monkeypatch):
     from sva.api.app import create_app
 
@@ -145,7 +141,6 @@ def test_points_api_updates_boundaries_and_reports_rebucket_counts(monkeypatch):
     assert getattr(patches[1], "end_video_ts_ms") == 24000
     assert response.json()["events_rebucketed"] == 2
     assert response.json()["observations_rebucketed"] == 1
-
 
 def test_points_api_maps_boundary_validation_errors_to_400(monkeypatch):
     from sva.api.app import create_app

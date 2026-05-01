@@ -7,7 +7,6 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import text
 
-
 def _db_reachable() -> bool:
     try:
         from sva.db import get_engine
@@ -17,7 +16,6 @@ def _db_reachable() -> bool:
         return True
     except Exception:
         return False
-
 
 @pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable")
 def test_gemini_perceiver_emits_valid_observation_with_db_cost(monkeypatch):
@@ -38,10 +36,10 @@ def test_gemini_perceiver_emits_valid_observation_with_db_cost(monkeypatch):
         )
 
     fake_observation_json = (
-        '{"schema_version":"1.0","observation_id":"obs_smoke_1","window_id":"win_1",'
+        '{"schema_version":"2.0","observation_id":"obs_smoke_1","window_id":"win_1",'
         '"video_id":"vid_test","video_ts_start_ms":0,"video_ts_end_ms":2000,'
         '"observation_ts_ms":1000,"scene":{},"disc":{},"players":{},'
-        '"actions_detected":[],"text_observed":[],"free_form_note":"",'
+        '"text_observed":[],'
         '"model":{"provider":"gemini","model_id":"ignored","version":"ignored"},'
         '"confidence_overall":0.5}'
     )
@@ -81,7 +79,7 @@ def test_gemini_perceiver_emits_valid_observation_with_db_cost(monkeypatch):
     ctx = TraceContext(stage="perceive", model="gemini-2.5-flash", video_id="vid_test", game_id=game_id)
 
     obs = GeminiPerceiver().perceive(ctx, window)
-    assert obs.schema_version == "1.0"
+    assert obs.schema_version == "2.0"
     assert obs.model.provider == "gemini"
     assert obs.model.model_id == "gemini-2.5-flash"
     assert obs.window_id == "win_1"
@@ -98,7 +96,6 @@ def test_gemini_perceiver_emits_valid_observation_with_db_cost(monkeypatch):
 
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM jobs WHERE game_id = :g"), {"g": game_id})
-
 
 def test_gemini_perceiver_populates_prompt_hash_and_ambiguity_fields(monkeypatch):
     from google.genai import types
@@ -132,7 +129,7 @@ def test_gemini_perceiver_populates_prompt_hash_and_ambiguity_fields(monkeypatch
                     total_token_count=366,
                 ),
                 parsed={
-                    "schema_version": "1.0",
+                    "schema_version": "2.0",
                     "observation_id": "obs_fake_001",
                     "window_id": "ignored_by_adapter",
                     "video_id": "ignored_by_adapter",
@@ -150,13 +147,9 @@ def test_gemini_perceiver_populates_prompt_hash_and_ambiguity_fields(monkeypatch
                         "visible": False,
                         "visibility_quality": "likely_present_not_visible",
                         "in_air": False,
-                        "possessor_team": "unknown",
-                        "possessor_role": "none",
-                    },
+                        },
                     "players": {"dark_count_visible": 5, "light_count_visible": 4},
-                    "actions_detected": [],
                     "text_observed": [],
-                    "free_form_note": "ambiguous disc",
                     "model": {
                         "provider": "gemini",
                         "model_id": "ignored",
@@ -188,7 +181,6 @@ def test_gemini_perceiver_populates_prompt_hash_and_ambiguity_fields(monkeypatch
     assert obs.scene.multiple_discs_possible is True
     assert obs.disc.visibility_quality == "likely_present_not_visible"
     assert obs.raw_response_ref == "resp_123"
-
 
 def test_gemini_perceiver_retries_once_then_succeeds(monkeypatch):
     from google.genai import types
@@ -223,7 +215,7 @@ def test_gemini_perceiver_retries_once_then_succeeds(monkeypatch):
                     total_token_count=110,
                 ),
                 parsed={
-                    "schema_version": "1.0",
+                    "schema_version": "2.0",
                     "observation_id": "obs_retry_001",
                     "window_id": "win_retry_1",
                     "video_id": "vid_retry",
@@ -233,9 +225,7 @@ def test_gemini_perceiver_retries_once_then_succeeds(monkeypatch):
                     "scene": {},
                     "disc": {},
                     "players": {},
-                    "actions_detected": [],
                     "text_observed": [],
-                    "free_form_note": "",
                     "model": {"provider": "gemini", "model_id": "ignored", "version": "ignored"},
                     "confidence_overall": 0.5,
                 },
@@ -257,9 +247,10 @@ def test_gemini_perceiver_retries_once_then_succeeds(monkeypatch):
     ctx = TraceContext(stage="perceive", model="gemini-2.5-flash", video_id="vid_retry", game_id="game_retry")
 
     obs = GeminiPerceiver().perceive(ctx, window)
-    assert obs.observation_id == "obs_retry_001"
+    # observation_id is force-overridden by the adapter (the LLM has no business
+    # inventing system IDs), so we just verify it's a fresh non-empty string.
+    assert obs.observation_id and obs.observation_id.startswith("obs_")
     assert calls["count"] == 2
-
 
 def test_gemini_perceiver_raises_after_retry_exhaustion(monkeypatch):
     from google.genai import types

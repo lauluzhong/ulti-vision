@@ -13,7 +13,6 @@ from sva.ingest.ingest import IngestResult
 from sva.models import ModelMetadata, Observation
 from sva.points.types import BoundarySignal, PointRecord
 
-
 def test_run_pipeline_perceives_then_detects_points_then_interprets(monkeypatch):
     from sva.models import DiscObservation, Event, FormationObservation, PlayerCounts, SceneObservation
     from sva.pipeline import run_pipeline

@@ -19,7 +19,6 @@ from sva.models import (
 )
 from sva.observability import TraceContext
 
-
 def _db_reachable() -> bool:
     try:
         from sva.db import get_engine
@@ -29,7 +28,6 @@ def _db_reachable() -> bool:
         return True
     except Exception:
         return False
-
 
 def _dummy_obs(window_id="win_1", video_id="vid_test") -> Observation:
     return Observation(
@@ -42,12 +40,10 @@ def _dummy_obs(window_id="win_1", video_id="vid_test") -> Observation:
         scene=SceneObservation(),
         disc=DiscObservation(),
         players=PlayerCounts(),
-        actions_detected=[],
         text_observed=[],
         model=ModelMetadata(provider="dummy", model_id="dummy", version="v0"),
         confidence_overall=0.5,
     )
-
 
 @pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable")
 def test_gemini_interpreter_emits_valid_event_for_smoke_input(monkeypatch):
@@ -70,7 +66,7 @@ def test_gemini_interpreter_emits_valid_event_for_smoke_input(monkeypatch):
     fake_response = SimpleNamespace(
         parsed=[
             {
-                "schema_version": "1.0",
+                "schema_version": "2.0",
                 "event_id": "evt_smoke_1",
                 "game_id": game_id,
                 "point_id": f"{game_id}:pt_001",
@@ -108,7 +104,7 @@ def test_gemini_interpreter_emits_valid_event_for_smoke_input(monkeypatch):
     assert len(events) == 1
     event = events[0]
 
-    assert event.schema_version == "1.0"
+    assert event.schema_version == "2.0"
     assert event.model.provider == "gemini"
     assert event.model.model_id == "gemini-2.5-flash"
     assert event.point_id == f"{game_id}:pt_001"
@@ -125,7 +121,6 @@ def test_gemini_interpreter_emits_valid_event_for_smoke_input(monkeypatch):
 
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM jobs WHERE game_id = :g"), {"g": game_id})
-
 
 def test_run_point_accepts_custom_interpreter():
     """Swap-safe: a dummy Interpreter substitutes without code changes."""
@@ -165,7 +160,6 @@ def test_run_point_accepts_custom_interpreter():
     assert event.point_id == "g:pt_001"
     assert event.type == "unknown"
 
-
 def test_gemini_interpreter_parses_multiple_events_and_defaults_best_effort_fields(monkeypatch):
     """Verify per-event normalization: completion -> throw_type/pass_direction default
     to 'unknown', turnover -> turnover_subtype defaults to 'unknown', memory_refs
@@ -175,7 +169,7 @@ def test_gemini_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
 
     parsed_events = [
         {
-            "schema_version": "1.0",
+            "schema_version": "2.0",
             "event_id": "evt_1",
             "game_id": "game_x",
             "point_id": "game_x:pt_001",
@@ -192,7 +186,7 @@ def test_gemini_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
             "model": {"provider": "gemini", "model_id": "ignored", "version": "ignored"},
         },
         {
-            "schema_version": "1.0",
+            "schema_version": "2.0",
             "event_id": "evt_2",
             "game_id": "game_x",
             "point_id": "game_x:pt_001",
@@ -256,7 +250,6 @@ def test_gemini_interpreter_parses_multiple_events_and_defaults_best_effort_fiel
     assert events[0].model.model_id == "gemini-2.5-flash"
     assert events[0].memory_refs == ["mem_turnover_hint"]
     assert events[1].rule_refs == ["WFDF-13.2"]
-
 
 def test_gemini_interpreter_raises_on_invalid_structured_output(monkeypatch):
     """When Gemini returns a non-list payload, the adapter raises ValueError."""

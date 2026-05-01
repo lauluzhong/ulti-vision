@@ -7,7 +7,6 @@ from sva.observability import TraceContext
 from sva.perceive.adapters.base import PerceiveWindow
 from sva.perceive.runner import run_window
 
-
 def _observation(window: PerceiveWindow) -> Observation:
     return Observation(
         observation_id=f"obs_{window.window_id}",
@@ -19,13 +18,10 @@ def _observation(window: PerceiveWindow) -> Observation:
         scene=SceneObservation(),
         disc=DiscObservation(),
         players=PlayerCounts(),
-        actions_detected=[],
         text_observed=[],
-        free_form_note="runner test",
         model=ModelMetadata(provider="dummy", model_id="dummy-vlm", version="test"),
         confidence_overall=0.5,
     )
-
 
 def test_run_window_uses_cached_observation_without_calling_perceiver(monkeypatch):
     window = PerceiveWindow(
@@ -57,7 +53,6 @@ def test_run_window_uses_cached_observation_without_calling_perceiver(monkeypatc
 
     assert result == cached
     assert calls["perceive"] == 0
-
 
 def test_run_window_invokes_perceiver_and_persists_on_cache_miss(monkeypatch):
     window = PerceiveWindow(

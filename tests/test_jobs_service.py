@@ -12,7 +12,6 @@ from sva.jobs_dao import JobRecord
 from sva.models import ModelMetadata, Observation
 from sva.points.types import BoundarySignal, PointRecord
 
-
 def _job_record(**overrides) -> JobRecord:
     base = JobRecord(
         game_id="game_async_001",
@@ -37,7 +36,6 @@ def _job_record(**overrides) -> JobRecord:
         updated_at=datetime.now(timezone.utc),
     )
     return replace(base, **overrides)
-
 
 def test_submit_local_job_creates_queued_job(monkeypatch, tmp_path):
     from sva.jobs_service import submit_local_job
@@ -64,7 +62,6 @@ def test_submit_local_job_creates_queued_job(monkeypatch, tmp_path):
     assert captured["stage"] == "queued"
     assert captured["source_kind"] == "local_file"
     assert captured["progress"]["target_fps"] == 2
-
 
 def test_process_job_skips_points_with_existing_events_and_completes_remaining_work(monkeypatch):
     """v0 flow: every window is perceived first, then points are detected from

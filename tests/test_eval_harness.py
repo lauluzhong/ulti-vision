@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 
-
 def test_run_eval_reports_blocked_state_for_incomplete_real_gold_set(tmp_path):
     from sva.eval.harness import run_eval
 

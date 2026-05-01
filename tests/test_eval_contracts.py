@@ -6,7 +6,6 @@ import json
 
 import pytest
 
-
 def test_load_gold_manifest_rejects_unknown_event_game(tmp_path):
     from sva.eval.gold import load_gold_manifest
 
@@ -42,7 +41,6 @@ def test_load_gold_manifest_rejects_unknown_event_game(tmp_path):
 
     with pytest.raises(ValueError, match="unknown games"):
         load_gold_manifest(manifest_path)
-
 
 def test_load_gold_manifest_accepts_valid_manifest(tmp_path):
     from sva.eval.gold import load_gold_manifest

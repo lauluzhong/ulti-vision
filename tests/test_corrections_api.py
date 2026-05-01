@@ -11,7 +11,6 @@ from sva.jobs_dao import JobRecord
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-
 def _job() -> JobRecord:
     from datetime import datetime, timezone
     from decimal import Decimal
@@ -31,7 +30,6 @@ def _job() -> JobRecord:
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )
-
 
 def test_corrections_api_persists_immutable_correction_and_memory(monkeypatch):
     from sva.api.app import create_app
@@ -86,7 +84,6 @@ def test_corrections_api_persists_immutable_correction_and_memory(monkeypatch):
         "created_memory_ids": ["mem_http_001"],
     }
 
-
 def test_corrections_api_records_coach_provenance(monkeypatch):
     from sva.api.app import create_app
 
@@ -123,7 +120,6 @@ def test_corrections_api_records_coach_provenance(monkeypatch):
 
     assert response.status_code == 201
     assert seen == ["coach_provenance"]
-
 
 def test_corrections_api_rejects_invalid_payload_before_service_call(monkeypatch):
     from sva.api.app import create_app

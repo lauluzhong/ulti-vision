@@ -12,7 +12,6 @@ from sva.jobs_dao import JobRecord
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-
 def _job() -> JobRecord:
     from datetime import datetime, timezone
     from decimal import Decimal
@@ -32,7 +31,6 @@ def _job() -> JobRecord:
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )
-
 
 def _event(
     event_id: str,
@@ -63,7 +61,6 @@ def _event(
         confidence=0.91,
         warnings=[],
     )
-
 
 def test_events_api_returns_canonical_rows_in_stored_order(monkeypatch):
     from sva.api.app import create_app
@@ -127,7 +124,6 @@ def test_events_api_returns_canonical_rows_in_stored_order(monkeypatch):
         ],
     }
 
-
 def test_events_api_passes_filters_to_canonical_dao(monkeypatch):
     from sva.api.app import create_app
 
@@ -162,7 +158,6 @@ def test_events_api_passes_filters_to_canonical_dao(monkeypatch):
         "team": "light",
     }
     assert response.json()["events"][0]["event_id"] == "evt_filtered"
-
 
 def test_events_api_returns_404_for_unknown_game(monkeypatch):
     from sva.api.app import create_app

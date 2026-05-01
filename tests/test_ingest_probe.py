@@ -12,10 +12,8 @@ FIXTURES = Path("tests/fixtures")
 CFR_BASELINE = FIXTURES / "cfr_baseline.mp4"
 VFR_SYNTHETIC = FIXTURES / "vfr_synthetic.mp4"
 
-
 def _ffmpeg_available() -> bool:
     return shutil.which("ffmpeg") is not None
-
 
 @pytest.fixture(scope="module", autouse=True)
 def _ensure_fixtures():
@@ -49,7 +47,6 @@ def _ensure_fixtures():
             capture_output=True,
         )
 
-
 def test_probe_cfr_baseline():
     from sva.ingest.probe import probe_metadata
 
@@ -59,7 +56,6 @@ def test_probe_cfr_baseline():
     assert meta.is_variable_fps is False
     assert meta.width == 320 and meta.height == 240
 
-
 def test_probe_vfr_synthetic_detects_variable():
     from sva.ingest.probe import probe_metadata
 
@@ -67,7 +63,6 @@ def test_probe_vfr_synthetic_detects_variable():
     assert meta.is_variable_fps is True, (
         f"Expected VFR detection; reported={meta.fps_reported} average={meta.fps_average}"
     )
-
 
 def test_probe_missing_file_raises():
     from sva.ingest.probe import probe_metadata

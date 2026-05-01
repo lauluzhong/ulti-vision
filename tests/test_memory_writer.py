@@ -11,7 +11,6 @@ from sva.eval.harness import AlphaGateStatus, EvalReport
 from sva.eval.metrics import EventMetric
 from sva.models import CorrectionRecord, MemoryRecord, MemorySource
 
-
 def _correction(correction_id: str, coach_id: str) -> CorrectionRecord:
     return CorrectionRecord(
         correction_id=correction_id,
@@ -27,7 +26,6 @@ def _correction(correction_id: str, coach_id: str) -> CorrectionRecord:
         note="disc never hit ground",
         created_at=datetime.now(timezone.utc),
     )
-
 
 def _eval_report(*, dataset_ready: bool = True, completion_recall: float = 0.97) -> EvalReport:
     return EvalReport(
@@ -58,7 +56,6 @@ def _eval_report(*, dataset_ready: bool = True, completion_recall: float = 0.97)
         ),
     )
 
-
 def test_correction_to_memory_records_defaults_to_coach_scope():
     correction = _correction("corr_001", "coach_1")
     records = correction_to_memory_records(correction)
@@ -76,7 +73,6 @@ def test_correction_to_memory_records_defaults_to_coach_scope():
     assert "disc never hit ground" in record.embedding_input
     assert record.payload["source_memory_refs"] == ["mem_rule_1"]
 
-
 def test_can_promote_global_requires_distinct_coaches_and_builder_curation():
     same_coach = [_correction("corr_001", "coach_1"), _correction("corr_002", "coach_1")]
     distinct = [_correction("corr_001", "coach_1"), _correction("corr_002", "coach_2")]
@@ -84,7 +80,6 @@ def test_can_promote_global_requires_distinct_coaches_and_builder_curation():
     assert can_promote_global(same_coach, builder_curated=True) is False
     assert can_promote_global(distinct, builder_curated=False) is False
     assert can_promote_global(distinct, builder_curated=True) is True
-
 
 def test_promote_memory_record_creates_new_global_row():
     base = MemoryRecord(
@@ -118,7 +113,6 @@ def test_promote_memory_record_creates_new_global_row():
     assert promoted.payload["promotion_eval_dataset_id"] == "gold_v1"
     assert promoted.source.source_coach_id is None
 
-
 def test_promote_memory_record_blocks_single_coach_loop():
     base = MemoryRecord(
         memory_id="mem_coach_only",
@@ -137,7 +131,6 @@ def test_promote_memory_record_blocks_single_coach_loop():
             baseline_eval_report=_eval_report(completion_recall=0.97),
             candidate_eval_report=_eval_report(completion_recall=0.97),
         )
-
 
 def test_promote_memory_record_blocks_when_eval_gate_fails():
     base = MemoryRecord(

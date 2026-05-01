@@ -5,7 +5,6 @@ from __future__ import annotations
 from sva.interpret.rules import load_rulebook, rules_summary, validate_event
 from sva.models import Event, ModelMetadata
 
-
 def _event(event_id: str, event_type: str, team: str = "dark") -> Event:
     return Event(
         event_id=event_id,
@@ -19,13 +18,11 @@ def _event(event_id: str, event_type: str, team: str = "dark") -> Event:
         model=ModelMetadata(provider="anthropic", model_id="claude-sonnet-4-5", version="v1"),
     )
 
-
 def test_rulebook_loads_from_repo_data():
     book = load_rulebook()
     assert book.ruleset_id == "wfdf_2025"
     assert any(rule.ref == "WFDF-13.1" for rule in book.rules)
     assert "WFDF-13.1" in rules_summary()
-
 
 def test_validator_catches_possession_flip_without_turnover():
     timeline = [_event("e1", "possession_start", team="dark"), _event("e2", "completion", team="dark")]
@@ -34,12 +31,10 @@ def test_validator_catches_possession_flip_without_turnover():
     assert result.hard_violation is True
     assert any(issue.rule_ref == "WFDF-13.2" for issue in result.issues)
 
-
 def test_validator_catches_point_end_without_goal():
     result = validate_event(_event("e1", "point_end", team="dark"), [])
     assert result.hard_violation is True
     assert any(issue.rule_ref == "WFDF-13.7" for issue in result.issues)
-
 
 def test_validator_warns_on_goal_with_unknown_team_but_fails_open():
     result = validate_event(_event("e1", "goal", team="unknown"), [])

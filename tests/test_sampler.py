@@ -6,15 +6,12 @@ import pytest
 
 from sva.ingest.sampler import make_window_id, window_offsets
 
-
 def test_empty_duration():
     assert window_offsets(0) == []
-
 
 def test_rejects_invalid_window_size():
     with pytest.raises(ValueError):
         window_offsets(10.0, window_size_s=0)
-
 
 @pytest.mark.parametrize(
     ("fps", "expected"),
@@ -27,11 +24,9 @@ def test_rejects_invalid_window_size():
 def test_window_offsets_respect_sampling_fps(fps, expected):
     assert window_offsets(4.0, fps=fps, window_size_s=2.0) == expected
 
-
 def test_window_offsets_reject_above_v1_envelope():
     with pytest.raises(ValueError, match="1 <= fps <= 3"):
         window_offsets(4.0, fps=4)
-
 
 def test_window_id_is_deterministic_and_fps_sensitive():
     first = make_window_id(video_id="vid_123", start_ms=1000, end_ms=3000, fps=1)

@@ -14,15 +14,24 @@ def window_offsets(
     duration_s: float,
     fps: int = 1,
     window_size_s: float = 2.0,
+    stride_s: float | None = None,
 ) -> list[tuple[int, int]]:
     """Return a list of (start_ms, end_ms) pairs covering [0, duration_s).
 
     Args:
         duration_s: Total video duration in seconds. Must be >= 0.
-        fps: Sampling rate in the Phase 3 v1 envelope (1-3 fps).
+        fps: Legacy sampling-rate knob in the v1 envelope (1-3 fps). Used to
+            derive the stride if `stride_s` is None. Also used by `make_window_id`
+            for stable window identity strings.
         window_size_s: Window duration in seconds (default 2.0 — matches
             Observation.video_ts_end_ms - video_ts_start_ms in the example in
             ARCHITECTURE.md).
+        stride_s: Step between successive window starts in seconds. When None
+            (legacy), stride is derived from `fps` (1/fps seconds), which
+            produces overlapping windows. When equal to `window_size_s`, the
+            windows are non-overlapping — this is the v0 production preference
+            because each throw appears in exactly one window, eliminating the
+            LLM dedup load.
 
     Returns:
         List of (start_ms, end_ms) pairs. Last window is clipped to ``duration_s``.
@@ -31,11 +40,17 @@ def window_offsets(
         return []
     if window_size_s <= 0:
         raise ValueError("window_size_s must be positive")
-    fps = validate_sampling_fps(fps)
+
+    if stride_s is not None:
+        if stride_s <= 0:
+            raise ValueError("stride_s must be positive")
+        step_ms = int(stride_s * 1000)
+    else:
+        fps = validate_sampling_fps(fps)
+        step_ms = int(1000 / fps)
 
     duration_ms = int(duration_s * 1000)
     window_ms = int(window_size_s * 1000)
-    step_ms = int(1000 / fps)
     offsets: list[tuple[int, int]] = []
     start = 0
     while start < duration_ms:

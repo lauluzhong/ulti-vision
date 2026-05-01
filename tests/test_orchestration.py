@@ -12,7 +12,6 @@ from sva.jobs_dao import JobRecord
 from sva.models import ModelMetadata, Observation
 from sva.points.types import BoundarySignal, PointRecord
 
-
 def _job_record(**overrides) -> JobRecord:
     base = JobRecord(
         game_id="game_resume_001",
@@ -37,7 +36,6 @@ def _job_record(**overrides) -> JobRecord:
         updated_at=datetime.now(timezone.utc),
     )
     return replace(base, **overrides)
-
 
 def test_process_job_resume_reuses_cached_windows_after_crash(monkeypatch):
     """Verify that after a crash mid-perception, a second run reuses any

@@ -9,7 +9,6 @@ from sva.memory import MemoryRetriever, RetrievalQuery
 from sva.memory.embeddings import content_hash
 from sva.models import MemoryRecord, MemorySource
 
-
 def _record(
     memory_id: str,
     *,
@@ -27,7 +26,6 @@ def _record(
         embedding_input=embedding_input,
         created_at=datetime.now(timezone.utc),
     )
-
 
 class _FakeProvider:
     provider_name = "fake"
@@ -55,11 +53,9 @@ class _FakeProvider:
                 vectors.append([0.0, 1.0])
         return vectors
 
-
 class _ExplodingProvider(_FakeProvider):
     def embed_query(self, text: str) -> list[float]:
         raise RuntimeError("embedding service unavailable")
-
 
 def test_retriever_semantically_ranks_candidates_and_persists_missing_embeddings(monkeypatch):
     calls: list[tuple[tuple[str, ...], str | None, int | None]] = []
@@ -158,7 +154,6 @@ def test_retriever_semantically_ranks_candidates_and_persists_missing_embeddings
         ),
     ]
 
-
 def test_retriever_falls_back_to_deterministic_order_when_embeddings_fail(monkeypatch):
     def fake_list_memory_records(*, scopes=None, kinds=None, tag=None, limit=None):
         _ = scopes, kinds, limit
@@ -185,7 +180,6 @@ def test_retriever_falls_back_to_deterministic_order_when_embeddings_fail(monkey
 
     assert [record.memory_id for record in result] == ["mem_one", "mem_two"]
 
-
 def test_retriever_returns_empty_when_no_tag_match(monkeypatch):
     monkeypatch.setattr(
         "sva.memory.retriever.list_memory_records",
@@ -205,7 +199,6 @@ def test_retriever_returns_empty_when_no_tag_match(monkeypatch):
     result = asyncio.run(retriever.retrieve(query))
 
     assert result == []
-
 
 def test_retriever_signature_matches_phase5_contract():
     """Phase 5 must not change the signature — only the body."""

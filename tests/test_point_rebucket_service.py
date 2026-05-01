@@ -13,7 +13,6 @@ from sva.points.service import (
     _rebucket_observation_rows,
 )
 
-
 def test_build_replacement_points_rejects_overlapping_ranges():
     with pytest.raises(ValueError, match="ordered and non-overlapping"):
         _build_replacement_points(
@@ -23,7 +22,6 @@ def test_build_replacement_points_rejects_overlapping_ranges():
                 PointBoundaryPatch(start_video_ts_ms=10000, end_video_ts_ms=20000),
             ],
         )
-
 
 def test_rebucket_helpers_update_events_and_observations_from_new_boundaries():
     points = _build_replacement_points(
@@ -61,7 +59,6 @@ def test_rebucket_helpers_update_events_and_observations_from_new_boundaries():
     assert observations_rebucketed == 1
     assert observation_rows[0].point_id == "game_rebucket_001:pt_002"
     assert observation_rows[0].point_ordinal == 2
-
 
 def test_rebucket_helpers_reject_rows_outside_edited_boundaries():
     points = _build_replacement_points(

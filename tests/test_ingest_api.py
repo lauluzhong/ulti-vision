@@ -11,7 +11,6 @@ from sva.jobs_dao import JobRecord
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-
 def _fake_job(source_kind: str, source_url: str | None = None) -> JobRecord:
     from datetime import datetime, timezone
     from decimal import Decimal
@@ -31,7 +30,6 @@ def _fake_job(source_kind: str, source_url: str | None = None) -> JobRecord:
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )
-
 
 def test_ingest_api_accepts_file_upload(monkeypatch):
     from sva.api.app import create_app
@@ -57,7 +55,6 @@ def test_ingest_api_accepts_file_upload(monkeypatch):
     assert response.json()["job_id"] == "game_test"
     assert response.json()["source_kind"] == "local_file"
     assert enqueued == ["game_test"]
-
 
 def test_ingest_api_accepts_approved_url(monkeypatch):
     from sva.api.app import create_app
@@ -87,7 +84,6 @@ def test_ingest_api_accepts_approved_url(monkeypatch):
     assert response.json()["source_kind"] == "public_url"
     assert response.json()["job_id"] == "game_test"
     assert enqueued == ["game_test"]
-
 
 def test_ingest_api_rejects_url_without_rights_ack():
     from sva.api.app import create_app

@@ -18,7 +18,6 @@ from sva.ingest.sources import (
 )
 from sva.ingest.url_download import DOWNLOAD_DIR, download_public_video
 
-
 def test_validate_remote_source_accepts_youtube_and_ufa():
     assert validate_remote_source(
         RemoteUrlSource(
@@ -35,7 +34,6 @@ def test_validate_remote_source_accepts_youtube_and_ufa():
         )
     ).url == "https://watchufa.com/video/demo"
 
-
 def test_validate_remote_source_rejects_missing_rights_ack():
     with pytest.raises(RightsAckRequiredError):
         validate_remote_source(
@@ -46,7 +44,6 @@ def test_validate_remote_source_rejects_missing_rights_ack():
             )
         )
 
-
 def test_validate_remote_source_rejects_non_allowlisted_host():
     with pytest.raises(UnsupportedSourceError):
         validate_remote_source(
@@ -56,7 +53,6 @@ def test_validate_remote_source_rejects_non_allowlisted_host():
                 caller_id="builder",
             )
         )
-
 
 def test_download_public_video_raises_auth_required(monkeypatch):
     monkeypatch.setattr("sva.ingest.url_download.shutil.which", lambda name: "/usr/bin/yt-dlp")
@@ -77,7 +73,6 @@ def test_download_public_video_raises_auth_required(monkeypatch):
             game_id="game_auth_required",
         )
 
-
 def test_download_public_video_returns_created_file(monkeypatch, tmp_path):
     monkeypatch.setattr("sva.ingest.url_download.DOWNLOAD_DIR", tmp_path)
     monkeypatch.setattr("sva.ingest.url_download.shutil.which", lambda name: "/usr/bin/yt-dlp")
@@ -97,12 +92,10 @@ def test_download_public_video_returns_created_file(monkeypatch, tmp_path):
     assert path == tmp_path / "game_ok_demo.mp4"
     assert path.exists()
 
-
 def test_local_file_source_is_explicit():
     source = LocalFileSource(path=str(Path("tests/fixtures/cfr_baseline.mp4")))
     assert source.path.endswith("cfr_baseline.mp4")
     assert DOWNLOAD_DIR.name == "downloads"
-
 
 def test_validate_local_source_rejects_unsupported_extension():
     with pytest.raises(UnsupportedSourceError):

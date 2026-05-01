@@ -81,15 +81,28 @@ def _normalize_event(
     source_ids: list[str],
     retrieved_ids: list[str],
 ) -> Event:
+    """Normalize an LLM-emitted event before persisting.
+
+    Force-overrides system-owned fields (event_id, game_id, point_id,
+    point_ordinal, prompt_version_hash, model) from the trace context. The LLM
+    can hallucinate placeholder strings if a prompt example uses them
+    literally; pipeline-side overrides keep the database referentially intact
+    regardless of what the model returns.
+    """
+    import uuid as _uuid
+
     update: dict[str, Any] = {
-        "prompt_version_hash": event.prompt_version_hash or ctx.prompt_version_hash,
-        "point_id": event.point_id or ctx.point_id or f"{ctx.game_id}:pt_001",
-        "point_ordinal": event.point_ordinal or ctx.point_ordinal or 1,
-        "game_id": event.game_id or ctx.game_id,
+        # Always-authoritative fields: ignore whatever the LLM emitted.
+        "event_id": f"evt_{_uuid.uuid4().hex[:12]}",
+        "game_id": ctx.game_id,
+        "point_id": ctx.point_id or f"{ctx.game_id}:pt_001",
+        "point_ordinal": ctx.point_ordinal or 1,
+        "prompt_version_hash": ctx.prompt_version_hash,
+        "model": ModelMetadata(provider="gemini", model_id=_MODEL_ID, version=_VERSION),
+        # Best-effort propagation: LLM may set these, fall back if not.
         "source_observations": event.source_observations or source_ids,
         "rule_refs": event.rule_refs,
         "memory_refs": event.memory_refs or retrieved_ids,
-        "model": ModelMetadata(provider="gemini", model_id=_MODEL_ID, version=_VERSION),
     }
     if event.type == "turnover" and event.turnover_subtype is None:
         update["turnover_subtype"] = "unknown"

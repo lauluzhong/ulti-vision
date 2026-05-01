@@ -11,7 +11,6 @@ import subprocess
 import pytest
 from sqlalchemy import text
 
-
 def _db_reachable() -> bool:
     try:
         from sva.db import get_engine
@@ -23,7 +22,6 @@ def _db_reachable() -> bool:
     except Exception:
         return False
 
-
 @pytest.fixture(scope="module")
 def migrated_db():
     if not _db_reachable():
@@ -33,7 +31,6 @@ def migrated_db():
     subprocess.run(["alembic", "upgrade", "head"], check=True, env=env)
     yield
     # Leave schema in place — downstream plans expect head state.
-
 
 def test_jobs_and_events_tables_exist(migrated_db):
     from sva.db import get_engine
@@ -48,7 +45,6 @@ def test_jobs_and_events_tables_exist(migrated_db):
         ).scalars().all()
     assert "jobs" in rows
     assert "events" in rows
-
 
 def test_phase6_job_progress_columns_exist_when_migrated(migrated_db):
     from sva.db import get_engine
@@ -68,7 +64,6 @@ def test_phase6_job_progress_columns_exist_when_migrated(migrated_db):
     ]:
         assert column in columns
 
-
 def test_phase2_rights_ack_table_exists_when_migrated(migrated_db):
     from sva.db import get_engine
 
@@ -82,7 +77,6 @@ def test_phase2_rights_ack_table_exists_when_migrated(migrated_db):
         ).scalars().all()
     assert "rights_acks" in rows
 
-
 def test_phase3_observations_table_exists_when_migrated(migrated_db):
     from sva.db import get_engine
 
@@ -95,7 +89,6 @@ def test_phase3_observations_table_exists_when_migrated(migrated_db):
             )
         ).scalars().all()
     assert "observations" in rows
-
 
 def test_phase4_event_audit_columns_exist_when_migrated(migrated_db):
     from sva.db import get_engine
@@ -118,7 +111,6 @@ def test_phase4_event_audit_columns_exist_when_migrated(migrated_db):
     ]:
         assert column in rows
 
-
 def test_phase5_memory_and_corrections_tables_exist_when_migrated(migrated_db):
     from sva.db import get_engine
 
@@ -132,7 +124,6 @@ def test_phase5_memory_and_corrections_tables_exist_when_migrated(migrated_db):
         ).scalars().all()
     assert "memory_records" in rows
     assert "corrections" in rows
-
 
 def test_phase5_memory_embeddings_table_exists_when_migrated(migrated_db):
     from sva.db import get_engine
@@ -165,7 +156,6 @@ def test_phase5_memory_embeddings_table_exists_when_migrated(migrated_db):
     ]:
         assert column in columns
 
-
 def test_cost_aggregation_query_works(migrated_db):
     from sva.db import get_engine
 
@@ -176,7 +166,6 @@ def test_cost_aggregation_query_works(migrated_db):
             {"g": "nonexistent_game"},
         ).scalar()
     assert total == 0
-
 
 def test_pgvector_extension_present(migrated_db):
     from sva.db import get_engine

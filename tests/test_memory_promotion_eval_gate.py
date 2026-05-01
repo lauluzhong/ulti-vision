@@ -6,7 +6,6 @@ from sva.eval.gate import evaluate_memory_promotion_gate
 from sva.eval.harness import AlphaGateStatus, EvalReport
 from sva.eval.metrics import EventMetric
 
-
 def _metric(recall: float | None) -> EventMetric:
     return EventMetric(
         gold_count=10,
@@ -17,7 +16,6 @@ def _metric(recall: float | None) -> EventMetric:
         precision=1.0 if recall is not None else None,
         recall=recall,
     )
-
 
 def _report(
     *,
@@ -47,7 +45,6 @@ def _report(
         ),
     )
 
-
 def test_memory_promotion_gate_blocks_without_eligible_gold_set():
     result = evaluate_memory_promotion_gate(
         _report(dataset_ready=False),
@@ -56,7 +53,6 @@ def test_memory_promotion_gate_blocks_without_eligible_gold_set():
 
     assert result.allowed is False
     assert any("eligible gold set" in reason for reason in result.blocked_reasons)
-
 
 def test_memory_promotion_gate_blocks_recall_drop_of_three_points_or_more():
     result = evaluate_memory_promotion_gate(
@@ -67,7 +63,6 @@ def test_memory_promotion_gate_blocks_recall_drop_of_three_points_or_more():
     assert result.allowed is False
     assert result.recall_deltas["completion"] == -0.03
     assert any("completion recall dropped by 0.030" in reason for reason in result.blocked_reasons)
-
 
 def test_memory_promotion_gate_allows_small_non_regressing_change():
     result = evaluate_memory_promotion_gate(

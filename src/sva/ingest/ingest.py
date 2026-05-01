@@ -69,7 +69,15 @@ def _ingest_resolved_path(
     transcoded_path = TRANSCODED_DIR / f"{video_id}.mp4"
     out_meta = transcode_to_cfr(src, transcoded_path, fps=target_fps)
 
-    windows = window_offsets(out_meta.duration_s, fps=target_fps, window_size_s=2.0)
+    # v0: non-overlapping 2-sec windows. Each throw appears in exactly ONE window
+    # so the LLM doesn't have to dedupe sliding-window overlap. stride_s=2.0
+    # halves the Gemini call count vs the legacy fps=1 overlap mode.
+    windows = window_offsets(
+        out_meta.duration_s,
+        fps=target_fps,
+        window_size_s=2.0,
+        stride_s=2.0,
+    )
 
     upsert_job(
         game_id=game_id,
@@ -189,7 +197,12 @@ def load_ingest_result_for_job(
     source_meta = probe_metadata(src)
     transcoded_meta = probe_metadata(transcoded_path)
     effective_fps = target_fps or int((job.progress or {}).get("target_fps", 1) or 1)
-    windows = window_offsets(transcoded_meta.duration_s, fps=effective_fps, window_size_s=2.0)
+    windows = window_offsets(
+        transcoded_meta.duration_s,
+        fps=effective_fps,
+        window_size_s=2.0,
+        stride_s=2.0,
+    )
     return IngestResult(
         video_id=job.video_id,
         game_id=job.game_id,

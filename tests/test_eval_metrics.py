@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-
 def test_compute_event_metrics_is_per_type_and_point_aware():
     from sva.eval.gold import ComparableEvent
     from sva.eval.metrics import compute_event_metrics

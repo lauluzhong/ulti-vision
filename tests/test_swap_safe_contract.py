@@ -23,7 +23,6 @@ from sva.observability import TraceContext
 from sva.perceive.adapters.base import Perceiver, PerceiveWindow
 from sva.perceive.runner import run_window
 
-
 def _db_reachable() -> bool:
     try:
         from sva.db import get_engine
@@ -33,7 +32,6 @@ def _db_reachable() -> bool:
         return True
     except Exception:
         return False
-
 
 class DummyPerceiver:
     """Hand-rolled Perceiver that does not touch any network or SDK.
@@ -56,20 +54,16 @@ class DummyPerceiver:
             scene=SceneObservation(),
             disc=DiscObservation(),
             players=PlayerCounts(),
-            actions_detected=[],
-            text_observed=[],
-            free_form_note="dummy adapter — swap-safety test",
+        text_observed=[],
             model=ModelMetadata(provider="dummy", model_id="dummy-vlm-v0", version="test"),
             confidence_overall=0.42,
         )
-
 
 def test_dummy_perceiver_conforms_to_protocol():
     # Structural (duck) typing: Perceiver is a Protocol; isinstance check requires runtime_checkable.
     # We instead verify by calling through run_window.
     p: Perceiver = DummyPerceiver()  # must satisfy Protocol statically
     assert hasattr(p, "perceive")
-
 
 def test_run_window_accepts_any_perceiver():
     ctx = TraceContext(
@@ -90,4 +84,4 @@ def test_run_window_accepts_any_perceiver():
     assert obs.model.provider == "dummy"
     assert obs.confidence_overall == 0.42
     # Same schema as Gemini output — proves downstream consumers are agnostic.
-    assert obs.schema_version == "1.0"
+    assert obs.schema_version == "2.0"

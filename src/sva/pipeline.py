@@ -7,13 +7,19 @@ Critical change from prior bootstrap: point detection now runs AFTER perception,
 using VLM-observed game phase signals (pre_pull / live_play / score_celebration /
 between_points) to find real point boundaries. The old whole-game-as-one-point
 bootstrap is gone.
+
+Perceive calls are issued in parallel via a ThreadPoolExecutor — Gemini calls
+are I/O-bound (~10-25s each) and threads dramatically reduce wall-clock time
+without hitting Gemini's per-key rate limits at this concurrency.
 """
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -130,10 +136,14 @@ def run_pipeline(
     perceive_memory = _retrieve_perceive_memory(retriever, ing.game_id)
     observations: list[Observation] = []
     fresh_persists: list[tuple[Observation, str]] = []  # (observation, prompt_hash) for cache misses
+    persists_lock = threading.Lock()
 
     def _record_cache_miss(observation: Observation, prompt_hash: str) -> None:
-        fresh_persists.append((observation, prompt_hash))
+        with persists_lock:
+            fresh_persists.append((observation, prompt_hash))
 
+    # Build all perceive jobs upfront.
+    windows = []
     for start_ms, end_ms in ing.windows:
         window = PerceiveWindow(
             window_id=make_window_id(
@@ -147,6 +157,12 @@ def run_pipeline(
             video_ts_end_ms=end_ms,
             transcoded_path=ing.transcoded_path,
         )
+        windows.append(window)
+
+    total_windows = len(windows)
+    print(f"[perceive] running {total_windows} windows in parallel...", flush=True)
+
+    def _perceive_one(window: PerceiveWindow) -> Observation | None:
         window_ctx = TraceContext(
             stage="perceive",
             model=getattr(perceiver, "model_id", "unknown"),
@@ -155,16 +171,31 @@ def run_pipeline(
             window_id=window.window_id,
         )
         try:
-            obs = run_window(
+            return run_window(
                 window_ctx,
                 window,
                 perceiver=perceiver,
                 retrieved=perceive_memory,
                 on_cache_miss=_record_cache_miss,
             )
-            observations.append(obs)
         except Exception as exc:
-            logger.exception("perceive failed for window %s: %s", window.window_id, exc)
+            logger.warning("perceive failed for window %s: %s", window.window_id, exc)
+            return None
+
+    # Concurrency 8: I/O-bound calls, well under Gemini's per-key rate limits.
+    completed = 0
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(_perceive_one, w): w for w in windows}
+        for fut in as_completed(futures):
+            obs = fut.result()
+            completed += 1
+            if obs is not None:
+                observations.append(obs)
+            print(
+                f"[perceive] {completed}/{total_windows} done "
+                f"({len(observations)} observations buffered)",
+                flush=True,
+            )
 
     # Stage 2: detect points from VLM observations.
     points = detect_points_from_observations(ing.game_id, observations)

@@ -10,7 +10,6 @@ from sqlalchemy import text
 
 from sva.models import Event, ModelMetadata
 
-
 def _db_reachable() -> bool:
     try:
         from sva.db import get_engine
@@ -21,7 +20,6 @@ def _db_reachable() -> bool:
     except Exception:
         return False
 
-
 @pytest.fixture(scope="module")
 def migrated_db():
     if not _db_reachable():
@@ -29,7 +27,6 @@ def migrated_db():
     env = os.environ.copy()
     subprocess.run(["alembic", "upgrade", "head"], check=True, env=env)
     yield
-
 
 @pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable")
 def test_insert_event_persists_point_scope_and_widened_audit_fields(migrated_db):

@@ -28,9 +28,15 @@ from sva.perceive.adapters.base import PerceiveWindow
 from sva.perceive.prompt import build_perceive_prompt
 
 _MODEL_ID = "gemini-2.5-flash"
-_VERSION = "v0-ultimate-aware-v1"
+_VERSION = "v0-deterministic-fact-output-v2"
 _MAX_RETRIES = 3
 _BASE_BACKOFF_S = 0.25
+
+# Frames-per-second Gemini extracts FROM each window's video slice for inference.
+# We set this EXPLICITLY so motion-direction observations are reliable; the SDK
+# default is 1.0 which is too sparse for 2-second windows.
+# 2.0 gives ~4 frames per 2-sec window — enough for direction calls, still cheap.
+_VIDEO_INFERENCE_FPS = 2.0
 
 
 def _get_client():
@@ -131,7 +137,12 @@ def _parse_observation(response, window: PerceiveWindow, uploaded_file_name: str
 
     return observation.model_copy(
         update={
-            "observation_id": observation.observation_id or f"obs_{uuid.uuid4().hex[:12]}",
+            # Always force a fresh, unique observation_id. The LLM has no business
+            # inventing system IDs — when it does (e.g., Gemini takes a prompt
+            # placeholder literally), every window collides on the same ID and
+            # the unique constraint fires. Pipeline-side ID generation guarantees
+            # uniqueness regardless of what the model returns.
+            "observation_id": f"obs_{uuid.uuid4().hex[:12]}",
             "window_id": window.window_id,
             "video_id": window.video_id,
             "video_ts_start_ms": window.video_ts_start_ms,
@@ -173,6 +184,10 @@ def _call_gemini(
     retry_count = 0
 
     # Build the per-window content: file reference + video time slice + text prompt.
+    # video_metadata.fps is set EXPLICITLY (not relying on Gemini's default 1.0)
+    # so motion direction within a 2-second window can be detected. fps=2.0
+    # gives 4 frames per 2-sec window — enough for direction/state-transition
+    # judgement, still well under the 5 fps Gemini ceiling, and bills modestly.
     start_offset_s = window.video_ts_start_ms / 1000.0
     end_offset_s = window.video_ts_end_ms / 1000.0
     contents = [
@@ -187,6 +202,7 @@ def _call_gemini(
                     video_metadata=genai.types.VideoMetadata(
                         start_offset=f"{start_offset_s:.2f}s",
                         end_offset=f"{end_offset_s:.2f}s",
+                        fps=_VIDEO_INFERENCE_FPS,
                     ),
                 ),
                 genai.types.Part(text=user_prompt),
@@ -268,30 +284,40 @@ class GeminiPerceiver:
         # Lives on the perceiver instance so one pipeline run shares uploads
         # across all its windows; multiple pipeline runs each create their
         # own perceiver so caches don't leak across game_ids.
+        import threading as _t
+
         self._upload_cache: dict[str, object] = {}
+        self._upload_lock = _t.Lock()
 
     def _ensure_uploaded(self, transcoded_path: str) -> object:
+        # Fast path: cache hit without lock.
         cached = self._upload_cache.get(transcoded_path)
         if cached is not None:
             return cached
-        client = _get_client()
-        uploaded = client.files.upload(
-            file=Path(transcoded_path),
-            config=genai.types.UploadFileConfig(
-                displayName=Path(transcoded_path).name,
-                mimeType=_guess_mime_type(transcoded_path),
-            ),
-        )
-        # Block until ACTIVE — generate_content fails 400 FAILED_PRECONDITION
-        # if called while the file is still PROCESSING.
-        _wait_for_file_active(client, uploaded)
-        # Refresh the handle once more so .uri / .state reflect ACTIVE.
-        try:
-            uploaded = client.files.get(name=getattr(uploaded, "name", None))
-        except Exception:
-            pass
-        self._upload_cache[transcoded_path] = uploaded
-        return uploaded
+        # Slow path: serialize uploads so 8 parallel perceivers don't trigger
+        # 8 separate uploads of the same 100MB clip. Double-checked locking.
+        with self._upload_lock:
+            cached = self._upload_cache.get(transcoded_path)
+            if cached is not None:
+                return cached
+            client = _get_client()
+            uploaded = client.files.upload(
+                file=Path(transcoded_path),
+                config=genai.types.UploadFileConfig(
+                    displayName=Path(transcoded_path).name,
+                    mimeType=_guess_mime_type(transcoded_path),
+                ),
+            )
+            # Block until ACTIVE — generate_content fails 400 FAILED_PRECONDITION
+            # if called while the file is still PROCESSING.
+            _wait_for_file_active(client, uploaded)
+            # Refresh the handle once more so .uri / .state reflect ACTIVE.
+            try:
+                uploaded = client.files.get(name=getattr(uploaded, "name", None))
+            except Exception:
+                pass
+            self._upload_cache[transcoded_path] = uploaded
+            return uploaded
 
     def prompt_hash_for(
         self,

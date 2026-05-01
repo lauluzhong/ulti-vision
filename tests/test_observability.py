@@ -8,7 +8,6 @@ from decimal import Decimal
 import pytest
 from sqlalchemy import text
 
-
 def _db_reachable() -> bool:
     try:
         from sva.db import get_engine
@@ -18,7 +17,6 @@ def _db_reachable() -> bool:
         return True
     except Exception:
         return False
-
 
 def test_estimate_gemini_cost_matches_published_rates():
     from sva.observability.cost import estimate_gemini_cost
@@ -31,7 +29,6 @@ def test_estimate_gemini_cost_matches_published_rates():
     # = $0.15 + $0.015 + $2.50 = $2.665
     cost_cached = estimate_gemini_cost(1_000_000, 1_000_000, cached_input_tokens=500_000)
     assert cost_cached == Decimal("2.665")
-
 
 @pytest.mark.skipif(not _db_reachable(), reason="Postgres unreachable; start `docker compose up -d db`")
 def test_record_job_cost_aggregates_per_game():
@@ -56,7 +53,6 @@ def test_record_job_cost_aggregates_per_game():
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM jobs WHERE game_id = :g"), {"g": game_id})
 
-
 def test_observe_call_decorator_returns_result_not_tuple():
     """Langfuse may not be available in CI; the decorator must still pass through the result."""
     from sva.observability.langfuse import TraceContext, observe_call
@@ -78,7 +74,6 @@ def test_observe_call_decorator_returns_result_not_tuple():
 
     with get_engine().begin() as conn:
         conn.execute(text("DELETE FROM jobs WHERE game_id = :g"), {"g": "test_obs_game_2"})
-
 
 def test_prompt_version_hash_is_non_empty_and_prompt_sensitive():
     """OBS-02: TraceContext.prompt_version_hash must be a non-empty 12-char SHA-256 hex prefix.
@@ -116,7 +111,6 @@ def test_prompt_version_hash_is_non_empty_and_prompt_sensitive():
     # Hash is stable (same input = same output)
     hash_a_repeat = hashlib.sha256(prompt_a.encode()).hexdigest()[:12]
     assert ctx_a.prompt_version_hash == hash_a_repeat
-
 
 def test_observe_call_updates_trace_on_exception(monkeypatch):
     from sva.observability.langfuse import TraceContext, observe_call
@@ -176,7 +170,6 @@ def test_observe_call_updates_trace_on_exception(monkeypatch):
     ]
     assert ("latency_ms", 250.0) in scores
 
-
 def test_cache_hit_rerun_emits_prompt_hash_observability_without_perceiver_call(monkeypatch):
     from sva.models import DiscObservation, ModelMetadata, Observation, PlayerCounts, SceneObservation
     from sva.observability import TraceContext
@@ -221,9 +214,7 @@ def test_cache_hit_rerun_emits_prompt_hash_observability_without_perceiver_call(
                 scene=SceneObservation(),
                 disc=DiscObservation(),
                 players=PlayerCounts(),
-                actions_detected=[],
-                text_observed=[],
-                free_form_note="cached",
+        text_observed=[],
                 model=ModelMetadata(provider="dummy", model_id="dummy-vlm", version="test"),
                 confidence_overall=0.5,
             )
@@ -246,7 +237,6 @@ def test_cache_hit_rerun_emits_prompt_hash_observability_without_perceiver_call(
     assert traces[0].metadata["prompt_version_hash"] == "cachehash001"
     assert traces[0].output["terminal_status"] == "cache_hit"
     assert traces[0].output["cache_hit"] is True
-
 
 def test_interpret_observe_call_preserves_prompt_hash_on_success(monkeypatch):
     from sva.observability.langfuse import TraceContext, observe_call

@@ -12,7 +12,6 @@ from sva.jobs_dao import JobRecord
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-
 def _job() -> JobRecord:
     from datetime import datetime, timezone
     from decimal import Decimal
@@ -33,7 +32,6 @@ def _job() -> JobRecord:
         updated_at=datetime.now(timezone.utc),
     )
 
-
 def test_video_api_serves_playable_file(monkeypatch, tmp_path):
     from sva.api.app import create_app
 
@@ -50,7 +48,6 @@ def test_video_api_serves_playable_file(monkeypatch, tmp_path):
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("video/mp4")
     assert response.content == b"fake mp4 bytes"
-
 
 def test_video_api_returns_404_for_unknown_game(monkeypatch):
     from sva.api.app import create_app

@@ -22,7 +22,7 @@ from sva.points.types import BoundarySignal, PointBoundaryCandidate, PointRecord
 # Phases that count as "inside an active point" — pre-pull setup, the pull
 # itself, contested play, and the brief score celebration before players walk
 # back to lines.
-IN_POINT_PHASES = frozenset({"pre_pull", "pull_in_air", "live_play", "score_celebration"})
+IN_POINT_PHASES = frozenset({"pre_pull", "pull_in_air", "live_play", "post_score_celebration"})
 
 # Phase confidence threshold below which we treat the phase as noise and carry
 # over the prior classification. Avoids churning point boundaries on a single
@@ -89,10 +89,17 @@ def _classify(obs: Observation, prev: str) -> str:
 
 
 def _signals_for_run(observations: list[Observation]) -> list[BoundarySignal]:
-    """Collect VLM-observed pull and score signals from a contiguous in-point run."""
+    """Collect VLM-observed pull and score signals from a contiguous in-point run.
+
+    v2.0 schema: pull formation lives on `obs.formation.pull_formation_visible`,
+    arms-up score signals live on `obs.events.arms_raised_score_signal_observed`,
+    scoreboard ticks are inferred from successive ScoreboardReading values
+    elsewhere (the LLM, not this detector).
+    """
     signals: list[BoundarySignal] = []
     for obs in observations:
         f = obs.formation
+        ev = obs.events
         if f.pull_formation_visible:
             signals.append(
                 BoundarySignal(
@@ -106,27 +113,15 @@ def _signals_for_run(observations: list[Observation]) -> list[BoundarySignal]:
                     },
                 )
             )
-        if f.score_signal == "two_hands_up" and f.score_signal_confidence > 0.0:
+        if ev.arms_raised_score_signal_observed and ev.arms_raised_score_signal_confidence > 0.0:
             signals.append(
                 BoundarySignal(
                     source="vlm",
                     video_ts_ms=obs.video_ts_end_ms,
-                    confidence=f.score_signal_confidence,
+                    confidence=ev.arms_raised_score_signal_confidence,
                     details={
-                        "score_signal": "two_hands_up",
-                        "arms_raised_count": f.arms_raised_count,
-                        "window_id": obs.window_id,
-                    },
-                )
-            )
-        if f.score_signal == "scoreboard_change" and f.score_signal_confidence > 0.0:
-            signals.append(
-                BoundarySignal(
-                    source="scoreboard",
-                    video_ts_ms=obs.video_ts_end_ms,
-                    confidence=f.score_signal_confidence,
-                    details={
-                        "score_signal": "scoreboard_change",
+                        "score_signal": "arms_raised",
+                        "arms_raised_count": ev.arms_raised_count,
                         "window_id": obs.window_id,
                     },
                 )

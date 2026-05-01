@@ -28,7 +28,6 @@ IPHONE_FIXTURE = FIXTURES / "iphone_hevc_vfr_90s.mov"
 GROUNDTRUTH_FILE = FIXTURES / "iphone_hevc_vfr_90s.groundtruth.json"
 TOLERANCE_MS = 2000  # +/-2 seconds
 
-
 def _db_reachable() -> bool:
     try:
         from sva.db import get_engine
@@ -38,7 +37,6 @@ def _db_reachable() -> bool:
         return True
     except Exception:
         return False
-
 
 def _require_real_fixtures_or_fail() -> None:
     """Fail loudly (not skip) if fixture or groundtruth file is missing.
@@ -61,7 +59,6 @@ def _require_real_fixtures_or_fail() -> None:
             '  {"pull_start_ms": 12000, "first_completion_ms": 18500, "goal_ms": 74200}\n'
             "Each value is a video_ts_ms (milliseconds) for a clearly visible event in the clip."
         )
-
 
 def test_iphone_hevc_vfr_ingest_event_timestamps_within_2s_of_groundtruth():
     """INGEST-04 gate -- event-level timestamps must be within +/-2000ms of manually-verified groundtruth.

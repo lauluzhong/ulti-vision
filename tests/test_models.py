@@ -14,10 +14,8 @@ from sva.models import (
     Observation,
 )
 
-
-def test_schema_version_is_1_0():
-    assert SCHEMA_VERSION == "1.0"
-
+def test_schema_version_is_2_0():
+    assert SCHEMA_VERSION == "2.0"
 
 def test_observation_round_trips_json():
     obs = Observation(
@@ -33,10 +31,9 @@ def test_observation_round_trips_json():
     payload = obs.model_dump_json()
     rehydrated = Observation.model_validate_json(payload)
     assert rehydrated == obs
-    assert rehydrated.schema_version == "1.0"
+    assert rehydrated.schema_version == "2.0"
     assert rehydrated.disc.visibility_quality == "absent"
     assert rehydrated.scene.multiple_discs_possible is False
-
 
 def test_event_enum_is_closed():
     # Invalid type must raise.
@@ -51,7 +48,6 @@ def test_event_enum_is_closed():
             type="not_a_real_event",  # type: ignore[arg-type]
             model=ModelMetadata(provider="anthropic", model_id="claude-sonnet-4-5", version="v1"),
         )
-
 
 def test_event_player_id_is_always_none():
     e = Event(
@@ -78,7 +74,6 @@ def test_event_player_id_is_always_none():
             player_id="p_42",  # type: ignore[arg-type]
             model=ModelMetadata(provider="anthropic", model_id="claude-sonnet-4-5", version="v1"),
         )
-
 
 def test_event_explicit_audit_fields_and_best_effort_details_round_trip():
     e = Event(
@@ -108,7 +103,6 @@ def test_event_explicit_audit_fields_and_best_effort_details_round_trip():
     assert rehydrated.prompt_version_hash == "abc123def456"
     assert rehydrated.rule_refs == ["WFDF-12.1", "WFDF-13.2"]
 
-
 def test_memory_record_defaults_are_safe():
     mr = MemoryRecord(
         memory_id="mem_01",
@@ -118,7 +112,6 @@ def test_memory_record_defaults_are_safe():
     assert mr.scope == "global"
     assert mr.confidence == 0.0
     assert mr.corroborations == 0
-
 
 def test_correction_record_round_trips_json():
     record = CorrectionRecord(
@@ -140,7 +133,6 @@ def test_correction_record_round_trips_json():
     assert rehydrated.source_memory_refs == ["mem_01"]
     assert rehydrated.original_event["type"] == "turnover"
 
-
 def test_no_vendor_field_leakage():
     # The contract is: no field name contains a provider string.
     forbidden = {"gemini", "anthropic", "claude", "gpt", "openai"}
@@ -149,7 +141,6 @@ def test_no_vendor_field_leakage():
             lowered = name.lower()
             for f in forbidden:
                 assert f not in lowered, f"{cls.__name__}.{name} leaks vendor name '{f}'"
-
 
 def test_observation_ambiguity_defaults_are_safe():
     obs = Observation(

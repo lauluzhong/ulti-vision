@@ -13,7 +13,6 @@ from sqlalchemy import text
 FIXTURES = Path("tests/fixtures")
 VFR_SYNTHETIC = FIXTURES / "vfr_synthetic.mp4"
 
-
 def _db_reachable() -> bool:
     try:
         from sva.db import get_engine
@@ -23,7 +22,6 @@ def _db_reachable() -> bool:
         return True
     except Exception:
         return False
-
 
 @pytest.fixture(scope="module", autouse=True)
 def _ensure_vfr_fixture():
@@ -43,7 +41,6 @@ def _ensure_vfr_fixture():
             check=True,
             capture_output=True,
         )
-
 
 @pytest.mark.skipif(
     not _db_reachable() or os.getenv("RUN_REAL_GEMINI") != "1",

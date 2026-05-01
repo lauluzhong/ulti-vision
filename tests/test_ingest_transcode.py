@@ -11,7 +11,6 @@ import pytest
 FIXTURES = Path("tests/fixtures")
 VFR_SYNTHETIC = FIXTURES / "vfr_synthetic.mp4"
 
-
 @pytest.fixture(scope="module", autouse=True)
 def _ensure_vfr_fixture():
     if shutil.which("ffmpeg") is None:
@@ -31,7 +30,6 @@ def _ensure_vfr_fixture():
             capture_output=True,
         )
 
-
 def test_transcode_produces_cfr(tmp_path):
     from sva.ingest.transcode import transcode_to_cfr
     from sva.ingest.probe import probe_metadata
@@ -48,7 +46,6 @@ def test_transcode_produces_cfr(tmp_path):
     reprobed = probe_metadata(dst)
     assert reprobed.codec in {"h264", "libx264"}
     assert reprobed.is_variable_fps is False
-
 
 def test_transcode_missing_source_raises(tmp_path):
     from sva.ingest.transcode import transcode_to_cfr

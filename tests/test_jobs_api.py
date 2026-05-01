@@ -13,7 +13,6 @@ from sva.jobs_dao import JobRecord
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient
 
-
 def _job(status: str = "running", stage: str = "perceive") -> JobRecord:
     return JobRecord(
         game_id="game_jobs_001",
@@ -30,7 +29,6 @@ def _job(status: str = "running", stage: str = "perceive") -> JobRecord:
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
     )
-
 
 def test_jobs_api_returns_persisted_status(monkeypatch):
     from sva.api.app import create_app
@@ -55,7 +53,6 @@ def test_jobs_api_returns_persisted_status(monkeypatch):
         },
         "error_message": None,
     }
-
 
 def test_jobs_api_returns_404_for_unknown_job(monkeypatch):
     from sva.api.app import create_app
