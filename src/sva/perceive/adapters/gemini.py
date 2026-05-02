@@ -33,10 +33,12 @@ _MAX_RETRIES = 3
 _BASE_BACKOFF_S = 0.25
 
 # Frames-per-second Gemini extracts FROM each window's video slice for inference.
-# We set this EXPLICITLY so motion-direction observations are reliable; the SDK
-# default is 1.0 which is too sparse for 2-second windows.
-# 2.0 gives ~4 frames per 2-sec window — enough for direction calls, still cheap.
-_VIDEO_INFERENCE_FPS = 2.0
+# We set this EXPLICITLY so motion-direction and event-transition observations
+# are reliable; the SDK default is 1.0 which is too sparse for 2-second windows.
+# 4.0 gives ~8 frames per 2-sec window — captures sub-second throw/catch
+# transitions that 2.0 was missing (smoke test undercounted throws because
+# a fast handoff < 0.5s fit entirely between fps=2 frame samples).
+_VIDEO_INFERENCE_FPS = 4.0
 
 
 def _get_client():
