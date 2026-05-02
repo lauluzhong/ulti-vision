@@ -277,8 +277,15 @@ events; each is a yes/no fact + confidence):
   the disc just before release.
 - catch_completed_observed: true if the disc transitions from in_air -> held
   by a player of the SAME team that threw it. Set catch_team.
-- drop_observed: true if the disc transitions from in_air -> on_ground without
-  being caught.
+- drop_observed: true ONLY if the disc was airborne and then visibly hit the
+  ground without being caught. Strict definition:
+  * NOT a drop: a player laying out / diving and catching the disc successfully
+  * NOT a drop: a player on the ground holding the disc after a successful catch
+  * NOT a drop: a player picking up a disc that was already on the ground
+  Set drop_observed=true ONLY when you see the disc fall from the air to the
+  ground without being held. If you can't see the airborne phase or the failure
+  to catch, leave drop_observed=false. Drops are RARE in actual gameplay
+  (Ultimate's average completion rate is 85-95%); be conservative.
 - block_observed: true if a defender visibly contacts the disc mid-flight
   (regardless of where the disc lands afterwards). Set block_defender_team.
 - interception_observed: true if the disc transitions from in_air -> held by a

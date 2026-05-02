@@ -53,20 +53,53 @@ WHAT THE VLM REPORTS (per window — these are FACTS, not inferences):
 
 YOUR DEDUCTION RULES:
 
-1. COMPLETION = throw_release_observed in window N + catch_completed_observed
-   (same team) in window N or N+1, with no drop/block/interception between.
-   Confidence = avg of the underlying throw + catch confidences.
+1. COMPLETION DETECTION (the most common event — get this right):
+   The VLM reports per-window snapshots, but catches usually happen BETWEEN
+   windows, so catch_completed_observed=false in most windows even when a
+   real catch occurred. Use BOTH the explicit catch flag AND cross-window
+   state-transition inference:
 
-2. TURNOVER = explicit drop_observed, block_observed, interception_observed,
-   or out_of_bounds_observed event. Each maps to a turnover_subtype:
-   - drop_observed -> "drop"
-   - block_observed -> "block"
-   - interception_observed -> "interception"
-   - out_of_bounds_observed -> "out_of_bounds"
-   - throw_release with no catch and no drop/block/intercept within 3 windows
-     AND in_air state persists -> "throwaway"
-   Do NOT emit a turnover just because disc_possessor.team flipped between
-   windows — that may be VLM noise.
+   1a. EXPLICIT catch: throw_release_observed in window N + catch_completed_observed
+       (same team) in window N or N+1 with no drop/block/intercept between.
+
+   1b. CROSS-WINDOW INFERENCE (use this ALONGSIDE 1a, not instead): if
+       window N has disc.in_air=true AND window N+M (M=1..3) has
+       disc.held_by_player=true with disc_possessor.team matching the
+       throw_release_team from N, AND no drop/block/intercept/out_of_bounds
+       fired in any window N..N+M, then a CATCH happened between the windows.
+       Treat this as a completion. Confidence = avg of throw_release_confidence
+       (window N) + disc_possessor.team_confidence (window N+M), ~0.7 baseline.
+
+   1c. COMPLETION-AS-DEFAULT (Ultimate's base rate is 85-95% completion):
+       If a throw_release_observed fires in window N AND no explicit failure
+       event (drop / block / interception / out_of_bounds) appears in windows
+       N..N+3, default to COMPLETION even if neither 1a nor 1b cleanly apply.
+       This emits a completion with confidence ~0.5 (lower than 1a/1b cases).
+
+   The point of 1c is: missing a completion is recoverable via correction;
+   fabricating a turnover requires the coach to think harder to fix.
+
+2. TURNOVER (only with HARD evidence):
+   Emit a turnover ONLY when one of these is observed in the structured
+   event flags:
+   - drop_observed=true (and drop_confidence >= 0.5)
+   - block_observed=true (and block_confidence >= 0.5)
+   - interception_observed=true (and interception_confidence >= 0.5)
+   - out_of_bounds_observed=true (and out_of_bounds_confidence >= 0.5)
+
+   Each maps to a turnover_subtype: drop / block / interception / out_of_bounds.
+
+   Do NOT emit a turnover for any of these reasons:
+   - disc_possessor.team flipped between windows (treat as VLM noise; see rule 3)
+   - A throw was observed without an explicit catch (default to completion per
+     rule 1c — missing catches are common because catches happen between windows)
+   - The VLM left in_air=true for several windows (probably blurry footage,
+     not a hanging disc)
+
+   THROWAWAY rule (rare, requires strong evidence): emit a turnover with
+   subtype="throwaway" ONLY when a throw_release_observed is followed within
+   3 windows by drop_observed=true OR by disc.on_ground=true persisting
+   without held_by_player=true ever returning. Otherwise no throwaway.
 
 3. TEMPORAL SMOOTHING for possession (CRITICAL — guards against VLM noise):
    If a single window between two windows of team X reports team Y in
