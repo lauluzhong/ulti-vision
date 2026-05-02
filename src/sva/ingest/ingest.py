@@ -27,6 +27,17 @@ from sva.jobs_dao import JobRow, get_job, upsert_job
 TRANSCODED_DIR = Path("data/transcoded")
 SourceInput: TypeAlias = LocalFileSource | RemoteUrlSource
 
+# How many frames per second of source video the transcoded MP4 retains.
+# This is DIFFERENT from `target_fps` (which is the sampling rate for
+# window identity / cache key) and DIFFERENT from Gemini's
+# video_metadata.fps (which controls in-window frame extraction).
+#
+# Why 5: at 1 fps the transcoded file only had ONE frame per source
+# second, so even with video_metadata.fps=4 Gemini was looking at the
+# same frame 4 times. 5 fps gives the VLM real frame variety for motion
+# detection without bloating file size unnecessarily.
+TRANSCODE_FPS = 5
+
 
 @dataclass(frozen=True)
 class IngestResult:
@@ -67,7 +78,10 @@ def _ingest_resolved_path(
 
     TRANSCODED_DIR.mkdir(parents=True, exist_ok=True)
     transcoded_path = TRANSCODED_DIR / f"{video_id}.mp4"
-    out_meta = transcode_to_cfr(src, transcoded_path, fps=target_fps)
+    # Transcode at TRANSCODE_FPS, NOT target_fps. The transcoded file is what
+    # Gemini sees, so this is the maximum temporal resolution available to the
+    # VLM. target_fps is only used for the sampler stride / window identity.
+    out_meta = transcode_to_cfr(src, transcoded_path, fps=TRANSCODE_FPS)
 
     # v0: non-overlapping 2-sec windows. Each throw appears in exactly ONE window
     # so the LLM doesn't have to dedupe sliding-window overlap. stride_s=2.0
