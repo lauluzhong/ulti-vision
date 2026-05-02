@@ -107,27 +107,70 @@ YOUR DEDUCTION RULES:
    that window or the surrounding windows, treat the flip as VLM noise and
    keep possession with team X. Do NOT emit turnover events for noise flips.
 
-4. POSSESSION TRANSITIONS: emit possession_start ONLY at:
-   - The start of the point (first window with held_by_player=true), or
-   - Immediately after a turnover event you've already emitted, or
-   - Immediately after a goal you've already emitted.
-   Possession cannot flip teams without an intervening turnover or goal
-   (WFDF-13.2/12.1). If you cannot justify a flip with one of those events,
-   do NOT emit possession events for the flip.
+4. POSSESSION TRANSITIONS — this is at the TEAM level, not the player level:
+   In Ultimate, possession belongs to a TEAM. A team retains possession
+   through MANY throws and catches. A throw from player A to player B on the
+   SAME team does NOT change possession — it's just a completion within the
+   team's possession.
 
-5. GOAL detection — multiple signals must align:
-   a. arms_raised_score_signal_observed=true with arms_raised_count >= 2 in
-      a window, OR
-   b. scoreboard score-tick (compare scoreboard.dark_team_score and
-      light_team_score across windows — an integer increase indicates a
-      score), OR
-   c. catch_completed_observed=true with the receiver's disc_position
-      indicating they're inside an endzone (use disc_position.x_norm +
-      field_geometry.endzone_near_x_norm or endzone_far_x_norm), AND a
-      transition to formation.phase = post_score_celebration follows.
-   Two of these three signals = high-confidence goal. One alone = emit goal
-   with confidence ~0.4-0.6. Zero of three = no goal even if the phase says
-   "celebration" briefly (could be a hold/cheer, not a score).
+   Emit possession_start ONLY at:
+   - The start of the point (first window where one team has the disc), AND
+   - Immediately after a turnover event you've already emitted (other team
+     gains possession), AND
+   - Immediately after a goal you've already emitted (the team that just
+     scored becomes defense for the next pull, but if the clip continues into
+     a new point, the team receiving the next pull starts fresh possession).
+
+   Emit possession_end ONLY at:
+   - Immediately before a turnover event you've already emitted (this team
+     lost possession), AND
+   - Immediately before a goal scored by the OTHER team (a defensive score —
+     rare in Ultimate but possible after a turnover).
+
+   DO NOT emit possession_end:
+   - After every throw — a throw is just a pass within ongoing possession
+   - When the disc briefly goes airborne — that's just play in motion
+   - When the player holding the disc changes within the same team
+
+   Expected count for a typical point: 1 possession_start at the point's
+   beginning, 1 possession_end at the point's end (after the goal). If you
+   are about to emit the 3rd possession event in a single point and there
+   has been no turnover or goal between them, STOP — that's a bug.
+
+5. GOAL detection — any ONE of these is sufficient evidence (Ultimate goals
+   are observable but the celebration may not always be on camera):
+
+   a. SCOREBOARD TICK (highest confidence): scoreboard.dark_team_score or
+      scoreboard.light_team_score increases by 1 between any two windows.
+      The team whose score went up is the scoring team. Confidence 0.95.
+
+   b. ENDZONE CATCH (the most direct visual cue): a window has
+      disc.held_by_player=true AND field_geometry.endzone_near_visible=true
+      OR endzone_far_visible=true AND disc_position is within the endzone
+      area (e.g., disc_position.x_norm < endzone_near_x_norm + 0.05 if
+      endzone is on the left edge). The team holding the disc inside the
+      endzone is the scoring team. Confidence 0.85.
+
+   c. END-OF-CLIP HELD STATE: if the LAST window of the clip shows a player
+      holding the disc and the surrounding context (in_endzone_near or
+      in_endzone_far > 0 in players counts) suggests endzone position, AND
+      the prior window had disc.in_air=true (so a catch just happened),
+      this is likely a goal that ends the clip. Confidence 0.65.
+
+   d. ARMS-UP SIGNAL: arms_raised_score_signal_observed=true with
+      arms_raised_count >= 2 in any window. Confidence 0.8.
+
+   e. PHASE TRANSITION: any window shows formation.phase=post_score_celebration.
+      Confidence 0.6 alone; combine with (a)-(d) for higher confidence.
+
+   ANY single signal above is enough — emit a goal event with that
+   confidence. Multiple signals stack confidence toward 1.0. The goal
+   timestamp is the catch moment (window where in_air → held happened
+   inside the endzone), not the celebration.
+
+   Determining which team scored: use disc_possessor.team in the catch
+   window, OR the team that last had a throw_release_observed before
+   the catch.
 
 6. THROW_TYPE / PASS_DIRECTION (best-effort, default UNKNOWN):
    - throw_type stays "unknown" unless the VLM gives clear evidence (most

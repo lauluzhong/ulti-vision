@@ -299,6 +299,15 @@ events; each is a yes/no fact + confidence):
 
 formation:
 - phase: pick one (see system prompt for definitions).
+  * IMPORTANT goal-detection cue: if you observe a player visibly catching
+    or holding the disc INSIDE an endzone area (the rectangular zone behind
+    an endzone line, painted on the field), set phase = post_score_celebration
+    even if no celebratory arms-up is visible yet. The endzone catch IS
+    the goal moment in WFDF Ultimate; the celebration is secondary.
+  * If the LAST visible action in this window is a player holding the disc
+    inside the endzone (their feet are inside the colored rectangle behind
+    the endzone line), and the previous game state was live_play, this
+    window IS a scoring moment.
 - phase_confidence.
 - pull_formation_visible: true ONLY if you see the 7-defenders-on-endzone
   formation explicitly.
